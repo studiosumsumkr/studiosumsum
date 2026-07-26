@@ -201,10 +201,14 @@ export const useCMS = () => {
   const [loading, setLoading] = useState(true);
   const [dbConnected, setDbConnected] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'saved' | 'saving' | 'error' | 'idle'>('saved');
+  const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
+
   const isRemoteUpdatingRef = useRef(false);
   const quotaExceededRef = useRef(false);
+  const localLastEditTimeRef = useRef<number>(data.updatedAt || Date.now());
 
-  // Firestore Real-time Sync
+  // Firestore Real-time Sync with strict Timestamp Lock
   useEffect(() => {
     let unsubscribeFn: (() => void) | null = null;
     const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
@@ -213,14 +217,17 @@ export const useCMS = () => {
       setDbConnected(true);
       setLoading(false);
 
-      // Only update local state if snapshot exists and there are no pending local writes being pushed
       if (snapshot.exists()) {
         const remoteData = snapshot.data() as CMSData;
+        const remoteUpdatedAt = remoteData.updatedAt || 0;
         const hasPendingWrites = snapshot.metadata.hasPendingWrites;
 
-        // If changes were already sent from local and stored on server, or received from another device
-        if (!hasPendingWrites) {
+        // ONLY update local state if remote data is STRICTLY newer than local last edit time
+        // and there are no pending local writes being pushed
+        if (!hasPendingWrites && remoteUpdatedAt > localLastEditTimeRef.current) {
           isRemoteUpdatingRef.current = true;
+          localLastEditTimeRef.current = remoteUpdatedAt;
+          
           setData(prev => {
             const mergedSettings = { ...DEFAULT_DATA.settings, ...(remoteData.settings || {}) };
             const nextData = {
@@ -237,15 +244,18 @@ export const useCMS = () => {
             }
             return nextData;
           });
+
+          setSyncStatus('saved');
           setTimeout(() => {
             isRemoteUpdatingRef.current = false;
-          }, 200);
+          }, 300);
         }
       } else {
-        // Initialize remote document if missing (only CMS content)
+        // Initialize remote document if missing
         if (quotaExceededRef.current) return;
         const { cart, wishlist, ...initialCms } = DEFAULT_DATA;
-        setDoc(docRef, { ...initialCms, updatedAt: Date.now() }, { merge: true }).catch(err => {
+        const now = Date.now();
+        setDoc(docRef, { ...initialCms, updatedAt: now }, { merge: true }).catch(err => {
           if (err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded')) {
             quotaExceededRef.current = true;
           }
@@ -255,11 +265,7 @@ export const useCMS = () => {
       if (error?.code === 'resource-exhausted' || error?.message?.includes('Quota limit exceeded')) {
         quotaExceededRef.current = true;
         if (unsubscribeFn) {
-          try {
-            unsubscribeFn();
-          } catch (e) {
-            // ignore
-          }
+          try { unsubscribeFn(); } catch (e) {}
         }
       }
       setDbConnected(false);
@@ -271,102 +277,119 @@ export const useCMS = () => {
     };
   }, []);
 
-  // Sync to localStorage & Immediate/Debounced Firestore Sync
+  // Primary function to push data to Cloud DB
+  const pushToFirestore = async (cmsData: CMSData): Promise<boolean> => {
+    if (quotaExceededRef.current) {
+      setSyncStatus('error');
+      setSyncErrorMessage("Firestore 일일 할당량이 초과되어 로컬 저장소에만 보관됩니다.");
+      return false;
+    }
+
+    try {
+      setSyncStatus('saving');
+      const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
+      const { cart, wishlist, ...cmsPayload } = cmsData;
+      
+      const payloadString = JSON.stringify(cmsPayload);
+      if (payloadString.length > 950000) {
+        setSyncStatus('error');
+        setSyncErrorMessage("이미지 용량이 너무 큽니다. (1MB 제한) 이미지를 더 가볍게 줄여서 다시 올려주세요.");
+        return false;
+      }
+
+      await setDoc(docRef, cmsPayload, { merge: true });
+      setSyncStatus('saved');
+      setSyncErrorMessage(null);
+      return true;
+    } catch (err: any) {
+      console.error("Firestore sync error:", err);
+      setSyncStatus('error');
+      setSyncErrorMessage(err?.message || "클라우드 저장 실패");
+      return false;
+    }
+  };
+
+  // Sync to localStorage & Debounced Firestore Sync
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       setStorageError(null);
     } catch (e) {
       console.warn("Failed to persist data in storage:", e);
-      setStorageError("설정 데이터를 저장할 브라우저 용량(5MB)이 초과되었습니다. 이미지가 너무 크거나 많을 수 있으니, 더 작거나 가벼운 이미지를 사용해 주세요.");
+      setStorageError("설정 데이터를 저장할 브라우저 용량(5MB)이 초과되었습니다. 이미지를 더 작거나 가볍게 변경해 주세요.");
     }
 
-    // Do not re-sync back to Firestore if this state update was triggered by an incoming remote snapshot
     if (isRemoteUpdatingRef.current || quotaExceededRef.current) return;
 
-    // Debounce Firestore sync to push local changes reliably to the cloud
+    setSyncStatus('saving');
     const syncTimer = setTimeout(() => {
-      if (quotaExceededRef.current) return;
-
-      const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
-      const { cart, wishlist, ...cmsPayload } = data;
-      const payloadWithTime = {
-        ...cmsPayload,
-        updatedAt: Date.now()
-      };
-
-      setDoc(docRef, payloadWithTime, { merge: true })
-        .then(() => {
-          console.log("Successfully synchronized CMS changes to Firebase Cloud DB.");
-        })
-        .catch(err => {
-          if (err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded')) {
-            quotaExceededRef.current = true;
-            console.info("Firestore daily write quota reached. CMS changes will continue to be safely saved in local browser storage.");
-          } else {
-            console.warn("Firestore sync warning:", err?.message || err);
-          }
-        });
+      pushToFirestore(data);
     }, 400);
 
     return () => clearTimeout(syncTimer);
   }, [data]);
 
+  // Helper state setters with timestamp tracking
+  const updateDataWithTimestamp = (updater: (prev: CMSData) => CMSData) => {
+    const now = Date.now();
+    localLastEditTimeRef.current = now;
+    setData(prev => {
+      const updated = updater(prev);
+      return {
+        ...updated,
+        updatedAt: now
+      };
+    });
+  };
+
   const updateSettings = (newSettings: Partial<SiteSettings>) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
-      settings: { ...prev.settings, ...newSettings },
-      updatedAt: Date.now()
+      settings: { ...prev.settings, ...newSettings }
     }));
   };
 
   const addBanner = (banner: Omit<Banner, 'id'>) => {
     const newBanner = { ...banner, id: Date.now().toString() };
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
-      banners: [...prev.banners, newBanner],
-      updatedAt: Date.now()
+      banners: [...prev.banners, newBanner]
     }));
   };
 
   const updateBanner = (id: string, banner: Partial<Banner>) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
-      banners: prev.banners.map(b => b.id === id ? { ...b, ...banner } : b),
-      updatedAt: Date.now()
+      banners: prev.banners.map(b => b.id === id ? { ...b, ...banner } : b)
     }));
   };
 
   const deleteBanner = (id: string) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
-      banners: prev.banners.filter(b => b.id !== id),
-      updatedAt: Date.now()
+      banners: prev.banners.filter(b => b.id !== id)
     }));
   };
 
   const addProduct = (product: Omit<Product, 'id'>) => {
     const newProduct = { ...product, id: Date.now().toString() };
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
-      products: [...prev.products, newProduct],
-      updatedAt: Date.now()
+      products: [...prev.products, newProduct]
     }));
   };
 
   const updateProduct = (id: string, product: Partial<Product>) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
-      products: prev.products.map(p => p.id === id ? { ...p, ...product } : p),
-      updatedAt: Date.now()
+      products: prev.products.map(p => p.id === id ? { ...p, ...product } : p)
     }));
   };
 
   const deleteProduct = (id: string) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
-      products: prev.products.filter(p => p.id !== id),
-      updatedAt: Date.now()
+      products: prev.products.filter(p => p.id !== id)
     }));
   };
 
@@ -480,6 +503,8 @@ export const useCMS = () => {
     loading,
     dbConnected,
     storageError,
+    syncStatus,
+    syncErrorMessage,
     updateSettings, 
     addBanner, 
     updateBanner, 

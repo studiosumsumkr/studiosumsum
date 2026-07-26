@@ -85,6 +85,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
             <div className="w-full md:w-1/2 h-64 md:h-full bg-[#F9F9F9] border-b md:border-b-0 md:border-r border-[#E5E5E5] relative overflow-hidden group p-4">
               <img 
                 src={product.imageUrl} 
+                style={{ objectPosition: product.imagePosition || 'center' }}
                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-102 rounded-none" 
                 alt={product.name} 
               />

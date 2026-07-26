@@ -7,6 +7,7 @@ export interface Banner {
   order: number;
   ctaText?: string;
   decorativeText?: string;
+  imagePosition?: string; // e.g. 'center', 'top', 'bottom', '50% 20%', etc.
 }
 
 export interface TypographySettings {
@@ -61,6 +62,7 @@ export interface SiteSettings {
   editorialSubtitle: string;
   editorialDescription: string;
   editorialImageUrl: string;
+  editorialImagePosition?: string;
   editorialTitleStyle: TypographySettings;
   editorialDescriptionStyle: TypographySettings;
   
@@ -68,6 +70,7 @@ export interface SiteSettings {
   aboutTitle: string;
   aboutDescription: string;
   philosophyImageUrl: string;
+  philosophyImagePosition?: string;
   aboutTitleStyle: TypographySettings;
   aboutDescriptionStyle: TypographySettings;
 
@@ -157,6 +160,7 @@ export interface Product {
   description: string;
   link?: string;
   buyUrl?: string;
+  imagePosition?: string;
 }
 
 export interface SectionContent {

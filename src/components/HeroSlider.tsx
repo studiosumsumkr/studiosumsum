@@ -78,6 +78,7 @@ export const HeroSlider = ({ banners }: { banners: Banner[] }) => {
                   src={banner.imageUrl} 
                   alt=""
                   aria-hidden="true"
+                  style={{ objectPosition: banner.imagePosition || 'center' }}
                   className="absolute inset-0 h-full w-full object-cover opacity-30 blur-2xl scale-125"
                   referrerPolicy="no-referrer"
                 />
@@ -85,7 +86,8 @@ export const HeroSlider = ({ banners }: { banners: Banner[] }) => {
                 <img 
                   src={banner.imageUrl} 
                   alt={banner.title}
-                  className="relative h-full w-full object-cover object-center opacity-70 transition-transform duration-1000"
+                  style={{ objectPosition: banner.imagePosition || 'center' }}
+                  className="relative h-full w-full object-cover opacity-70 transition-transform duration-1000"
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/70" />

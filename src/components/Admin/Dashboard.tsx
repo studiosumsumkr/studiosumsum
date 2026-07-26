@@ -3,6 +3,7 @@ import { useCMS } from '../../cms';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, Save, LogOut, Image as ImageIcon, Settings, Layout, ShoppingBag, Type, Sparkles, Move, Maximize } from 'lucide-react';
 import { Banner, Product, SiteSettings, TypographySettings, LayoutSettings } from '../../types';
+import { ImageFocalPicker } from './ImageFocalPicker';
 import { GoogleGenAI } from "@google/genai";
 
 const TypographyEditor = ({ label, settings, onSave }: { label: string, settings: TypographySettings, onSave: (val: TypographySettings) => void }) => {
@@ -337,7 +338,7 @@ const compressBase64Image = (base64Str: string, maxWidth = 800, maxHeight = 800,
 
 export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const { 
-    banners, settings, products, storageError, dbConnected,
+    banners, settings, products, storageError, dbConnected, syncStatus, syncErrorMessage,
     updateSettings, addBanner, updateBanner, deleteBanner, 
     addProduct, updateProduct, deleteProduct,
     resetToDefaultData, forcePublishToCloud
@@ -558,7 +559,30 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                 <span className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 border ${dbConnected ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-amber-50 text-amber-800 border-amber-300'}`}>
                   {dbConnected ? '🔥 Firebase Cloud DB Active' : '⚡ Local Backup Mode'}
                 </span>
+                
+                {/* Sync Status Badge */}
+                <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 border flex items-center space-x-1.5 ${
+                  syncStatus === 'saving' ? 'bg-blue-50 text-blue-800 border-blue-300 animate-pulse' :
+                  syncStatus === 'saved' ? 'bg-emerald-500 text-white border-emerald-600' :
+                  syncStatus === 'error' ? 'bg-rose-50 text-rose-800 border-rose-300 font-black' :
+                  'bg-neutral-100 text-neutral-700 border-neutral-300'
+                }`}>
+                  <span>
+                    {syncStatus === 'saving' && '⏳ 저장 중... (Saving to Cloud)'}
+                    {syncStatus === 'saved' && '✅ 클라우드 저장 완료 (Saved)'}
+                    {syncStatus === 'error' && '❌ 저장 오류 발생'}
+                    {syncStatus === 'idle' && 'READY'}
+                  </span>
+                </span>
               </div>
+
+              {syncErrorMessage && (
+                <div className="mt-3 text-xs bg-rose-50 text-rose-800 border border-rose-200 p-2.5 rounded font-medium flex items-start space-x-2">
+                  <span className="font-bold">⚠️</span>
+                  <span>{syncErrorMessage}</span>
+                </div>
+              )}
+
               {/* Quick Tab Switcher & Cloud Publish Actions */}
               <div className="flex flex-wrap items-center gap-2 mt-5">
                 <button 
@@ -658,6 +682,15 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                         <Trash2 className="w-6 h-6" />
                       </button>
                     </div>
+
+                    <div className="col-span-full border-t border-neutral-100 pt-4">
+                      <ImageFocalPicker
+                        imageUrl={banner.imageUrl}
+                        position={banner.imagePosition || 'center'}
+                        onChange={(pos) => updateBanner(banner.id, { imagePosition: pos })}
+                        title="배너 사진 위치/초점 (Focal Point) & 모바일/PC 잘림 미리보기"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -709,6 +742,15 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                       <button onClick={() => deleteProduct(product.id)} className="p-4 border-2 border-transparent hover:border-red-500 text-black/20 hover:text-red-500 transition-all">
                         <Trash2 className="w-6 h-6" />
                       </button>
+                    </div>
+
+                    <div className="col-span-full border-t border-neutral-100 pt-4">
+                      <ImageFocalPicker
+                        imageUrl={product.imageUrl}
+                        position={product.imagePosition || 'center'}
+                        onChange={(pos) => updateProduct(product.id, { imagePosition: pos })}
+                        title="상품 사진 위치/초점 (Focal Point) & 모바일/PC 잘림 미리보기"
+                      />
                     </div>
                   </div>
                 </div>
@@ -983,10 +1025,15 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                         <EditableField label="Image Overlay Title" value={settings.editorialOverlayTitle || 'STUDIO SUMSUM ARCHIVE'} onSave={(val) => wrapUpdateSettings({ editorialOverlayTitle: val })} />
                       </div>
 
-                      <div className="col-span-full">
-                        <label className="text-[10px] uppercase tracking-[0.3em] font-black text-black/40 mb-4 block">Editorial Visual Image</label>
+                      <div className="col-span-full space-y-4">
+                        <label className="text-[10px] uppercase tracking-[0.3em] font-black text-black/40 block">Editorial Visual Image</label>
                         <div className="relative aspect-video border-2 border-black overflow-hidden group">
-                          <img src={settings.editorialImageUrl} className="w-full h-full object-cover" alt="" />
+                          <img 
+                            src={settings.editorialImageUrl} 
+                            style={{ objectPosition: settings.editorialImagePosition || 'center' }}
+                            className="w-full h-full object-cover" 
+                            alt="" 
+                          />
                           <div className="absolute inset-0 bg-black/75 opacity-100 md:opacity-0 md:group-hover:opacity-100 flex flex-col items-center justify-center transition-all pointer-events-none">
                             <ImageIcon className="text-accent w-10 h-10 mb-2" />
                             <span className="text-white text-[10px] uppercase tracking-widest font-black">Upload Visual Image (사진 변경)</span>
@@ -1000,6 +1047,13 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                             e.target.value = '';
                           }} />
                         </div>
+
+                        <ImageFocalPicker
+                          imageUrl={settings.editorialImageUrl}
+                          position={settings.editorialImagePosition || 'center'}
+                          onChange={(pos) => wrapUpdateSettings({ editorialImagePosition: pos })}
+                          title="에디토리얼 화보 사진 위치/초점 조절 & 모바일/PC 크롭 미리보기"
+                        />
                       </div>
                     </div>
                   </section>

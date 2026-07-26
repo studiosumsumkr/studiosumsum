@@ -154,6 +154,7 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
                   <img
                     src={product.imageUrl}
                     alt={product.name}
+                    style={{ objectPosition: product.imagePosition || 'center' }}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   
@@ -286,6 +287,7 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
             <img
               src={settings.editorialImageUrl}
               alt="Editorial Visual"
+              style={{ objectPosition: settings.editorialImagePosition || 'center' }}
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />

@@ -100,7 +100,6 @@ import { NetworkStatusIndicator } from './components/NetworkStatusIndicator';
 import { PromoAnnouncementBar } from './components/PromoAnnouncementBar';
 import { SearchModal } from './components/SearchModal';
 import { LiveSocialProofToast } from './components/LiveSocialProofToast';
-import { AmbientAudioPlayer } from './components/AmbientAudioPlayer';
 import { ScrollToTop } from './components/ScrollToTop';
 import { ShareWishlistModal } from './components/ShareWishlistModal';
 import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
@@ -207,7 +206,6 @@ function AppContent() {
       />
 
       <LiveSocialProofToast onProductClick={setSelectedProduct} />
-      <AmbientAudioPlayer />
       <ScrollToTop />
 
       <ShareWishlistModal

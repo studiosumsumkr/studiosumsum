@@ -5,7 +5,7 @@ import { Menu, X, ShoppingBag, User, Search, Instagram, Twitter, Facebook, Heart
 import { useCMS } from '../cms';
 import { getTypographyStyle } from '../utils';
 import { CurrencySelector } from './CurrencySelector';
-import { ThemeModeToggle } from './ThemeModeToggle';
+import { formatPrice } from '../utils/currency';
 
 interface NavbarProps {
   onAdminClick: () => void;
@@ -110,10 +110,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onAdminClick, onWishlistClick, o
 
           {/* Right Icons */}
           <div className={`flex items-center space-x-3 md:space-x-4 ${textColor} shrink-0`}>
-            {/* Currency Selector & Theme Toggle */}
+            {/* Currency Selector */}
             <div className="hidden xl:flex items-center space-x-2">
               <CurrencySelector />
-              <ThemeModeToggle />
             </div>
 
             {/* Coupon Trigger Button */}

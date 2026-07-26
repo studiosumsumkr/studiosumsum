@@ -339,7 +339,8 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const { 
     banners, settings, products, storageError, dbConnected,
     updateSettings, addBanner, updateBanner, deleteBanner, 
-    addProduct, updateProduct, deleteProduct
+    addProduct, updateProduct, deleteProduct,
+    resetToDefaultData, forcePublishToCloud
   } = useCMS();
   const [activeTab, setActiveTab] = useState<'banners' | 'settings' | 'products'>('banners');
   const [activeSubTab, setActiveSubTab] = useState<string>('branding');
@@ -558,8 +559,8 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                   {dbConnected ? '🔥 Firebase Cloud DB Active' : '⚡ Local Backup Mode'}
                 </span>
               </div>
-              {/* Quick Tab Switcher */}
-              <div className="flex items-center space-x-2 mt-5">
+              {/* Quick Tab Switcher & Cloud Publish Actions */}
+              <div className="flex flex-wrap items-center gap-2 mt-5">
                 <button 
                   onClick={() => setActiveTab('banners')} 
                   className={`px-4 py-2 text-[10px] font-extrabold uppercase tracking-widest border transition-all cursor-pointer ${activeTab === 'banners' ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-900 hover:text-neutral-900'}`}
@@ -577,6 +578,28 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                   className={`px-4 py-2 text-[10px] font-extrabold uppercase tracking-widest border transition-all cursor-pointer ${activeTab === 'settings' ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-900 hover:text-neutral-900'}`}
                 >
                   Site Content
+                </button>
+
+                <div className="h-4 w-[1px] bg-neutral-300 mx-2 hidden sm:block" />
+
+                <button
+                  onClick={forcePublishToCloud}
+                  className="px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-sm cursor-pointer"
+                  title="현재 수정본을 클라우드 데이터베이스에 강제 저장하여 퍼블리시에 즉시 반영합니다"
+                >
+                  ☁️ 현재 데이터 클라우드 저장 (Publish)
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (confirm("정말로 예전 클라우드/로컬 데이터를 모두 삭제하고, 최신 기본 원본 코드로 깨끗이 리셋하시겠습니까?")) {
+                      resetToDefaultData();
+                    }
+                  }}
+                  className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest bg-neutral-100 text-neutral-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border border-neutral-200 transition-all cursor-pointer"
+                  title="예전 파편 데이터를 모두 지우고 원본 데이터로 리셋합니다"
+                >
+                  🧹 예전 데이터 완전히 삭제/초기화
                 </button>
               </div>
             </div>

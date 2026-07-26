@@ -412,6 +412,42 @@ export const useCMS = () => {
     });
   };
 
+  const resetToDefaultData = async () => {
+    const freshData = {
+      ...DEFAULT_DATA,
+      updatedAt: Date.now()
+    };
+    setData(freshData);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(freshData));
+      const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
+      const { cart, wishlist, ...cmsPayload } = freshData;
+      await setDoc(docRef, cmsPayload);
+      alert("클라우드 DB와 로컬 데이터가 최신 기본 데이터로 깨끗하게 초기화되었습니다.");
+    } catch (e) {
+      console.error("Error resetting data:", e);
+      alert("데이터 초기화 완료 (로컬 저장소 적용)");
+    }
+  };
+
+  const forcePublishToCloud = async () => {
+    const currentData = {
+      ...data,
+      updatedAt: Date.now()
+    };
+    setData(currentData);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+      const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
+      const { cart, wishlist, ...cmsPayload } = currentData;
+      await setDoc(docRef, cmsPayload);
+      alert("현재 화면의 최신 데이터가 클라우드 DB에 성공적으로 강제 덮어쓰기(퍼블리시) 되었습니다.");
+    } catch (e) {
+      console.error("Error publishing to cloud:", e);
+      alert("클라우드 동기화 중 오류가 발생했지만 로컬에는 저장되었습니다.");
+    }
+  };
+
   return { 
     banners: data.banners, 
     settings: data.settings, 
@@ -433,6 +469,8 @@ export const useCMS = () => {
     removeFromCart,
     updateCartQuantity,
     clearCart,
-    toggleWishlist
+    toggleWishlist,
+    resetToDefaultData,
+    forcePublishToCloud
   };
 };

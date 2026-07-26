@@ -1,0 +1,16 @@
+{
+  "entities": {
+    "appData": {
+      "title": "AppData",
+      "description": "Global application state and settings",
+      "type": "object",
+      "properties": {
+        "banners": { "type": "array" },
+        "settings": { "type": "object" },
+        "products": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["banners", "settings", "products"]
+    }
+  }
+}

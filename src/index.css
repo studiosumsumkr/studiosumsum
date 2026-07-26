@@ -1,0 +1,154 @@
+@import "tailwindcss";
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..800&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Noto+Serif+KR:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Montserrat:wght@400;500;600;700;800;900&family=Syne:wght@400;500;700;800&display=swap');
+@import url('https://hangeul.pstatic.net/hangeul_static/css/nanum-square-round.css');
+
+@theme {
+  --font-serif: "Cormorant Garamond", "Bodoni Moda", "Playfair Display", "Noto Serif KR", serif;
+  --font-sans: "Noto Serif KR", "Cormorant Garamond", "Playfair Display", "Pretendard", serif;
+  --font-display: "Syne", "Cormorant Garamond", "Montserrat", serif;
+  
+  --color-primary: #222222;
+  --color-accent: #1E291B; /* Premium forest green accent */
+  --color-paper: #F9F9F9;
+
+  --animate-marquee: marquee 45s linear infinite;
+  --animate-float: float 7s ease-in-out infinite;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+}
+
+@layer base {
+  html {
+    @apply relative;
+  }
+  body {
+    @apply relative font-serif text-[#222222] bg-[#F9F9F9] antialiased selection:bg-[#111111] selection:text-[#F9F9F9] overflow-x-hidden tracking-[-0.01em] leading-[1.75];
+  }
+  
+  h1, h2, h3, h4 {
+    @apply font-display font-bold tracking-[0.12em] uppercase;
+  }
+}
+
+.luxury-button {
+  @apply relative inline-flex items-center justify-center px-12 py-4.5 bg-[#111111] text-[#F9F9F9] text-[10px] uppercase tracking-[0.12em] font-bold transition-all duration-500 hover:bg-[#222222] border border-[#111111] rounded-none shadow-none;
+}
+
+.marquee-container {
+  @apply flex overflow-hidden whitespace-nowrap py-8 border-y border-[#E5E5E5] bg-[#F9F9F9] text-[#222222];
+}
+
+.marquee-content {
+  @apply flex animate-marquee;
+}
+
+.hip-card {
+  @apply relative rounded-none p-0 bg-[#FFFFFF] transition-all duration-700 border border-[#E5E5E5] shadow-none;
+}
+
+.editorial-text {
+  @apply font-serif italic text-[#777777] font-light leading-relaxed;
+}
+
+.noise-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.012;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Ffilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/feTurbulence%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.glass-panel {
+  @apply bg-[#FFFFFF]/60 backdrop-blur-2xl border border-[#E5E5E5];
+}
+
+.text-outline {
+  -webkit-text-stroke: 1px currentColor;
+  color: transparent;
+}
+
+.hover-reveal {
+  @apply opacity-0 translate-y-4 transition-all duration-700 group-hover:opacity-100 group-hover:translate-y-0;
+}
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.section-label {
+  @apply text-[9px] uppercase tracking-[0.12em] font-medium text-[#777777] absolute left-8 top-1/2 -translate-y-1/2 hidden lg:block;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+/* Font Preset Helpers */
+.font-set-round, 
+.font-set-round .font-sans {
+  --font-sans: "NanumSquareRound", "Gowun Dodum", "Pretendard", "Noto Sans KR", "Inter", sans-serif;
+  --font-display: "NanumSquareRound", "Gowun Dodum", sans-serif;
+  font-family: "NanumSquareRound", "Gowun Dodum", "Pretendard", "Noto Sans KR", "Inter", sans-serif !important;
+}
+.font-set-round h1, 
+.font-set-round h2, 
+.font-set-round h3, 
+.font-set-round h4, 
+.font-set-round .font-display {
+  font-family: "NanumSquareRound", "Gowun Dodum", sans-serif !important;
+}
+
+.font-set-modern, 
+.font-set-modern .font-sans {
+  --font-sans: "Pretendard", "Noto Sans KR", "Inter", sans-serif;
+  --font-display: "Syne", "Montserrat", sans-serif;
+  font-family: "Pretendard", "Noto Sans KR", "Inter", sans-serif !important;
+}
+.font-set-modern h1, 
+.font-set-modern h2, 
+.font-set-modern h3, 
+.font-set-modern h4, 
+.font-set-modern .font-display {
+  font-family: "Syne", "Montserrat", sans-serif !important;
+}
+
+.font-set-classic, 
+.font-set-classic .font-sans {
+  --font-sans: "Noto Sans KR", "Cormorant Garamond", serif;
+  --font-display: "Cormorant Garamond", "Noto Sans KR", serif;
+  font-family: "Noto Sans KR", "Cormorant Garamond", serif !important;
+}
+.font-set-classic h1, 
+.font-set-classic h2, 
+.font-set-classic h3, 
+.font-set-classic h4, 
+.font-set-classic .font-display {
+  font-family: "Cormorant Garamond", "Noto Sans KR", serif !important;
+}
+
+.font-set-minimal, 
+.font-set-minimal .font-sans {
+  --font-sans: "Montserrat", "Inter", sans-serif;
+  --font-display: "Syne", "Montserrat", sans-serif;
+  font-family: "Montserrat", "Inter", sans-serif !important;
+}
+.font-set-minimal h1, 
+.font-set-minimal h2, 
+.font-set-minimal h3, 
+.font-set-minimal h4, 
+.font-set-minimal .font-display {
+  font-family: "Syne", "Montserrat", sans-serif !important;
+}
+

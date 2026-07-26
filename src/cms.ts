@@ -213,28 +213,34 @@ export const useCMS = () => {
       setDbConnected(true);
       setLoading(false);
 
+      // Only update local state if snapshot exists and there are no pending local writes being pushed
       if (snapshot.exists()) {
         const remoteData = snapshot.data() as CMSData;
-        isRemoteUpdatingRef.current = true;
-        setData(prev => {
-          const localTime = prev.updatedAt || 0;
-          const remoteTime = remoteData.updatedAt || 0;
-          // If local data has recent edits that are newer than remote snapshot, keep local data
-          if (localTime > remoteTime) {
-            return prev;
-          }
-          const mergedSettings = { ...DEFAULT_DATA.settings, ...(remoteData.settings || {}) };
-          return {
-            ...DEFAULT_DATA,
-            ...remoteData,
-            settings: mergedSettings,
-            cart: prev.cart,
-            wishlist: prev.wishlist
-          };
-        });
-        setTimeout(() => {
-          isRemoteUpdatingRef.current = false;
-        }, 100);
+        const hasPendingWrites = snapshot.metadata.hasPendingWrites;
+
+        // If changes were already sent from local and stored on server, or received from another device
+        if (!hasPendingWrites) {
+          isRemoteUpdatingRef.current = true;
+          setData(prev => {
+            const mergedSettings = { ...DEFAULT_DATA.settings, ...(remoteData.settings || {}) };
+            const nextData = {
+              ...DEFAULT_DATA,
+              ...remoteData,
+              settings: mergedSettings,
+              cart: prev.cart,
+              wishlist: prev.wishlist
+            };
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(nextData));
+            } catch (e) {
+              console.warn("LocalStorage save warning:", e);
+            }
+            return nextData;
+          });
+          setTimeout(() => {
+            isRemoteUpdatingRef.current = false;
+          }, 200);
+        }
       } else {
         // Initialize remote document if missing (only CMS content)
         if (quotaExceededRef.current) return;
@@ -265,7 +271,7 @@ export const useCMS = () => {
     };
   }, []);
 
-  // Sync to localStorage & Debounced Firestore Sync (Only for global CMS data)
+  // Sync to localStorage & Immediate/Debounced Firestore Sync
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -275,23 +281,33 @@ export const useCMS = () => {
       setStorageError("설정 데이터를 저장할 브라우저 용량(5MB)이 초과되었습니다. 이미지가 너무 크거나 많을 수 있으니, 더 작거나 가벼운 이미지를 사용해 주세요.");
     }
 
+    // Do not re-sync back to Firestore if this state update was triggered by an incoming remote snapshot
     if (isRemoteUpdatingRef.current || quotaExceededRef.current) return;
 
-    // Debounce Firestore sync to prevent exceeding write quotas on fast typing/edits
+    // Debounce Firestore sync to push local changes reliably to the cloud
     const syncTimer = setTimeout(() => {
       if (quotaExceededRef.current) return;
 
       const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
       const { cart, wishlist, ...cmsPayload } = data;
-      setDoc(docRef, cmsPayload, { merge: true }).catch(err => {
-        if (err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded')) {
-          quotaExceededRef.current = true;
-          console.info("Firestore daily write quota reached. CMS changes will continue to be safely saved in local browser storage.");
-        } else {
-          console.warn("Firestore sync warning:", err?.message || err);
-        }
-      });
-    }, 1000);
+      const payloadWithTime = {
+        ...cmsPayload,
+        updatedAt: Date.now()
+      };
+
+      setDoc(docRef, payloadWithTime, { merge: true })
+        .then(() => {
+          console.log("Successfully synchronized CMS changes to Firebase Cloud DB.");
+        })
+        .catch(err => {
+          if (err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded')) {
+            quotaExceededRef.current = true;
+            console.info("Firestore daily write quota reached. CMS changes will continue to be safely saved in local browser storage.");
+          } else {
+            console.warn("Firestore sync warning:", err?.message || err);
+          }
+        });
+    }, 400);
 
     return () => clearTimeout(syncTimer);
   }, [data]);

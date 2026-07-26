@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { useCMS } from '../cms';
+import { FreeShippingBar } from './FreeShippingBar';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -28,7 +29,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 z-[100] backdrop-blur-sm"
+            className="fixed inset-0 bg-black/60 z-[100] backdrop-blur-sm cursor-pointer"
           />
 
           {/* Drawer */}
@@ -37,20 +38,24 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 220 }}
-            className="fixed top-0 right-0 h-full w-full max-w-md bg-[#FFFFFF] z-[101] shadow-none flex flex-col border-l border-[#E5E5E5]"
+            className="fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-neutral-900 z-[101] shadow-2xl flex flex-col border-l border-neutral-200 dark:border-neutral-800"
           >
-            <div className="p-6 border-b border-[#E5E5E5] flex justify-between items-center bg-[#F9F9F9]">
-              <h2 className="text-sm font-display font-extrabold uppercase tracking-[0.12em] flex items-center gap-3 text-[#222222]">
-                <ShoppingBag className="w-4 h-4 text-[#1E291B]" />
-                Shopping Bag ({cart.length})
-              </h2>
-              <button 
-                onClick={onClose}
-                className="p-2 text-[#777777] hover:text-[#222222] hover:rotate-90 transition-transform duration-300"
-                id="close-cart-btn"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 space-y-3 bg-neutral-50 dark:bg-neutral-950">
+              <div className="flex justify-between items-center">
+                <h2 className="text-sm font-display font-extrabold uppercase tracking-[0.12em] flex items-center gap-3 text-neutral-900 dark:text-white">
+                  <ShoppingBag className="w-4 h-4 text-neutral-900 dark:text-white" />
+                  Shopping Bag ({cart.length})
+                </h2>
+                <button 
+                  onClick={onClose}
+                  className="p-2 text-neutral-400 hover:text-black dark:hover:text-white hover:rotate-90 transition-transform duration-300 cursor-pointer"
+                  id="close-cart-btn"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <FreeShippingBar currentAmount={total} />
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-8 space-y-8 bg-[#FFFFFF]">

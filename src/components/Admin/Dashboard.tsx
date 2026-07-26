@@ -4,6 +4,20 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, Save, LogOut, Image as ImageIcon, Settings, Layout, ShoppingBag, Type, Sparkles, Move, Maximize } from 'lucide-react';
 import { Banner, Product, SiteSettings, TypographySettings, LayoutSettings } from '../../types';
 import { ImageFocalPicker } from './ImageFocalPicker';
+import { AIAssistantModal } from './AIAssistantModal';
+import { DataBackupRestoreModal } from './DataBackupRestoreModal';
+import { AdminAnalyticsWidget } from '../AdminAnalyticsWidget';
+import { BulkProductEditorModal } from '../BulkProductEditorModal';
+import { AdminDevicePreviewModal } from '../AdminDevicePreviewModal';
+import { AdminSeoSettingsModal } from '../AdminSeoSettingsModal';
+import { AdminActivityLogModal } from '../AdminActivityLogModal';
+import { LowStockWidget } from '../LowStockWidget';
+import { AdminInquiryManagerModal } from '../AdminInquiryManagerModal';
+import { AdminCategoryManagerModal } from '../AdminCategoryManagerModal';
+import { AdminTranslationEditor } from '../AdminTranslationEditor';
+import { AdminDiscountModal } from '../AdminDiscountModal';
+import { AdminCouponLeadsModal } from '../AdminCouponLeadsModal';
+import { AdminSystemHealthModal } from '../AdminSystemHealthModal';
 import { GoogleGenAI } from "@google/genai";
 
 const TypographyEditor = ({ label, settings, onSave }: { label: string, settings: TypographySettings, onSave: (val: TypographySettings) => void }) => {
@@ -338,7 +352,7 @@ const compressBase64Image = (base64Str: string, maxWidth = 800, maxHeight = 800,
 
 export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const { 
-    banners, settings, products, storageError, dbConnected, syncStatus, syncErrorMessage,
+    banners, settings, products, couponClaims, storageError, dbConnected, syncStatus, syncErrorMessage,
     updateSettings, addBanner, updateBanner, deleteBanner, 
     addProduct, updateProduct, deleteProduct,
     resetToDefaultData, forcePublishToCloud,
@@ -346,6 +360,18 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   } = useCMS();
   const [activeTab, setActiveTab] = useState<'banners' | 'settings' | 'products'>('banners');
   const [activeSubTab, setActiveSubTab] = useState<string>('branding');
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [showDevicePreviewModal, setShowDevicePreviewModal] = useState(false);
+  const [showSeoModal, setShowSeoModal] = useState(false);
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [showInquiryModal, setShowInquiryModal] = useState(false);
+  const [showCouponLeadsModal, setShowCouponLeadsModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showTranslationModal, setShowTranslationModal] = useState(false);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [showHealthModal, setShowHealthModal] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [optimizing, setOptimizing] = useState(false);
   const [optimizationLogs, setOptimizationLogs] = useState<string>('');
@@ -486,6 +512,75 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
             <Settings className="w-4 h-4 lg:w-5 lg:h-5" />
             <span className="text-[8px] lg:text-[10px] uppercase tracking-[0.2em] lg:tracking-[0.3em] font-black">Site Content</span>
           </button>
+
+          <hr className="border-neutral-200 dark:border-neutral-800 my-2" />
+
+          {/* New Tools */}
+          <button 
+            onClick={() => setShowAiModal(true)}
+            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500 hover:text-black transition-all whitespace-nowrap border border-amber-500/20 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="text-[9px] uppercase tracking-[0.2em] font-black">AI 카피라이터</span>
+          </button>
+
+          <button 
+            onClick={() => setShowBulkEditModal(true)}
+            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-all whitespace-nowrap border border-neutral-200 dark:border-neutral-700 cursor-pointer"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span className="text-[9px] uppercase tracking-[0.2em] font-black">일괄 편집 테이블</span>
+          </button>
+
+          <button 
+            onClick={() => setShowDevicePreviewModal(true)}
+            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-all whitespace-nowrap border border-neutral-200 dark:border-neutral-700 cursor-pointer"
+          >
+            <Maximize className="w-4 h-4" />
+            <span className="text-[9px] uppercase tracking-[0.2em] font-black">디바이스 시뮬레이터</span>
+          </button>
+
+          <button 
+            onClick={() => setShowSeoModal(true)}
+            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-all whitespace-nowrap border border-neutral-200 dark:border-neutral-700 cursor-pointer"
+          >
+            <Settings className="w-4 h-4" />
+            <span className="text-[9px] uppercase tracking-[0.2em] font-black">SEO 메타관리</span>
+          </button>
+
+          <button 
+            onClick={() => setShowDiscountModal(true)}
+            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-all whitespace-nowrap border border-neutral-200 dark:border-neutral-700 cursor-pointer"
+          >
+            <Type className="w-4 h-4" />
+            <span className="text-[9px] uppercase tracking-[0.2em] font-black">할인 프로모션</span>
+          </button>
+
+          <button 
+            onClick={() => setShowCouponLeadsModal(true)}
+            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500 hover:text-black transition-all whitespace-nowrap border border-amber-500/30 cursor-pointer font-bold"
+          >
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span className="text-[9px] uppercase tracking-[0.15em] font-black">
+              쿠폰 전화번호 목록 ({couponClaims?.length || 0})
+            </span>
+          </button>
+
+          <button 
+            onClick={() => setShowLogModal(true)}
+            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-all whitespace-nowrap border border-neutral-200 dark:border-neutral-700 cursor-pointer"
+          >
+            <Move className="w-4 h-4" />
+            <span className="text-[9px] uppercase tracking-[0.2em] font-black">작업 히스토리 로그</span>
+          </button>
+
+          <button 
+            onClick={() => setShowBackupModal(true)}
+            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all whitespace-nowrap border border-emerald-500/20 cursor-pointer"
+          >
+            <Save className="w-4 h-4" />
+            <span className="text-[9px] uppercase tracking-[0.2em] font-black">백업 / 복구</span>
+          </button>
         </nav>
 
         <button 
@@ -500,7 +595,10 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-16 overflow-y-auto relative">
         <div className="noise-bg opacity-20" />
-        <div className="max-w-5xl mx-auto relative z-10">
+        <div className="max-w-5xl mx-auto relative z-10 space-y-6">
+          <AdminAnalyticsWidget />
+          <LowStockWidget />
+
           {optimizationLogs && (
             <div className="mb-8 p-6 border-2 border-accent bg-[#F9F9F9] text-black rounded-none space-y-1 focus-within:outline-none animate-in fade-in duration-300">
               <p className="font-sans font-bold uppercase tracking-[0.15em] text-[10px] text-accent flex items-center space-x-2">
@@ -1344,6 +1442,66 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
           )}
         </div>
       </main>
+
+      <AIAssistantModal
+        isOpen={showAiModal}
+        onClose={() => setShowAiModal(false)}
+      />
+
+      <DataBackupRestoreModal
+        isOpen={showBackupModal}
+        onClose={() => setShowBackupModal(false)}
+      />
+
+      <BulkProductEditorModal
+        isOpen={showBulkEditModal}
+        onClose={() => setShowBulkEditModal(false)}
+      />
+
+      <AdminDevicePreviewModal
+        isOpen={showDevicePreviewModal}
+        onClose={() => setShowDevicePreviewModal(false)}
+      />
+
+      <AdminSeoSettingsModal
+        isOpen={showSeoModal}
+        onClose={() => setShowSeoModal(false)}
+      />
+
+      <AdminActivityLogModal
+        isOpen={showLogModal}
+        onClose={() => setShowLogModal(false)}
+      />
+
+      <AdminInquiryManagerModal
+        isOpen={showInquiryModal}
+        onClose={() => setShowInquiryModal(false)}
+      />
+
+      <AdminCouponLeadsModal
+        isOpen={showCouponLeadsModal}
+        onClose={() => setShowCouponLeadsModal(false)}
+      />
+
+      <AdminCategoryManagerModal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+      />
+
+      <AdminTranslationEditor
+        isOpen={showTranslationModal}
+        onClose={() => setShowTranslationModal(false)}
+      />
+
+      <AdminDiscountModal
+        isOpen={showDiscountModal}
+        onClose={() => setShowDiscountModal(false)}
+      />
+
+      <AdminSystemHealthModal
+        isOpen={showHealthModal}
+        onClose={() => setShowHealthModal(false)}
+      />
     </div>
   );
 };

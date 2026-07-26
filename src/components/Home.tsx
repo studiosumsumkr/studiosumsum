@@ -359,38 +359,38 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
       <section 
         id="curation"
         ref={editorialRef}
-        className="scroll-mt-32 bg-[#111111] text-[#F9F9F9] py-24 lg:py-36 border-y border-[#222222] relative z-10"
+        className="scroll-mt-32 bg-[#F2F0E8] text-[#222222] py-20 lg:py-28 border-y border-[#E2DFD6] relative z-10"
       >
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           <div className="lg:col-span-6 space-y-8">
             <div className="space-y-3">
-              <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-neutral-400 font-display">
+              <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-neutral-500 font-display">
                 {settings.editorialSubtitle || 'SENSORY HOME CURATION'}
               </span>
-              <h2 className="text-3xl lg:text-4xl font-display font-extrabold uppercase tracking-[0.08em] text-white leading-tight">
+              <h2 className="text-3xl lg:text-4xl font-display font-extrabold uppercase tracking-[0.08em] text-[#111111] leading-tight">
                 {settings.editorialTitle || 'PHILOSOPHY IN EVERY PIECE'}
               </h2>
-              <div className="w-16 h-[2px] bg-white" />
+              <div className="w-16 h-[2px] bg-[#111111]" />
             </div>
 
-            <p className="font-sans text-neutral-300 text-sm lg:text-base leading-[1.8] tracking-tight">
+            <p className="font-sans text-neutral-700 text-sm lg:text-base leading-[1.8] tracking-tight">
               {settings.editorialDescription || '스튜디오 숨숨은 대량 생산품과 차별화되는 고유의 수공예적 결을 지닌 셀렉트 오더 소품을 기획합니다. 정돈된 비대칭의 아름다움과 정밀한 마감으로 일상의 공간에 예술적 공기를 채웁니다.'}
             </p>
 
-            <div className="grid grid-cols-2 gap-6 pt-4 border-t border-neutral-800">
+            <div className="grid grid-cols-2 gap-6 pt-4 border-t border-[#DCD9CE]">
               <div>
-                <p className="text-lg font-display font-extrabold text-white">
+                <p className="text-lg font-display font-extrabold text-[#111111]">
                   {settings.editorialKeypoint1Title || '01. NATURAL CLAY'}
                 </p>
-                <p className="text-xs text-neutral-400 mt-1">
+                <p className="text-xs text-neutral-600 mt-1">
                   {settings.editorialKeypoint1Desc || '자연의 흙과 트라버틴 석재 고유의 질감'}
                 </p>
               </div>
               <div>
-                <p className="text-lg font-display font-extrabold text-white">
+                <p className="text-lg font-display font-extrabold text-[#111111]">
                   {settings.editorialKeypoint2Title || '02. SLOW DESIGN'}
                 </p>
-                <p className="text-xs text-neutral-400 mt-1">
+                <p className="text-xs text-neutral-600 mt-1">
                   {settings.editorialKeypoint2Desc || '오래도록 질리지 않는 정돈된 미니멀 형태'}
                 </p>
               </div>
@@ -399,7 +399,7 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
             <div className="pt-4">
               <Link
                 to={settings.editorialButtonLink || "/shop"}
-                className="inline-flex items-center space-x-3 bg-white text-black px-8 py-3.5 font-display text-[10px] font-bold uppercase tracking-[0.25em] hover:bg-neutral-200 transition-all"
+                className="inline-flex items-center space-x-3 bg-[#222222] text-white px-8 py-3.5 font-display text-[10px] font-bold uppercase tracking-[0.25em] hover:bg-[#3E3E3E] transition-all"
               >
                 <span>{settings.editorialButtonText || 'EXPLORE COLLECTION'}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -409,7 +409,7 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
 
           <motion.div 
             style={{ y: editorialY }}
-            className="lg:col-span-6 relative aspect-[4/5] bg-neutral-900 border border-neutral-800 p-3"
+            className="lg:col-span-6 relative aspect-[4/5] bg-white border border-[#DCD9CE] p-3 shadow-md"
           >
             <img
               src={settings.editorialImageUrl}
@@ -418,11 +418,11 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute bottom-6 left-6 bg-[#111111]/90 backdrop-blur-md px-6 py-3 border border-neutral-700">
-              <p className="text-[9px] uppercase font-mono tracking-widest text-neutral-400">
+            <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md px-6 py-3 border border-neutral-200 shadow-md">
+              <p className="text-[9px] uppercase font-mono tracking-widest text-neutral-500">
                 {settings.editorialOverlayTag || 'CURATED LOOKBOOK'}
               </p>
-              <p className="text-xs font-bold font-display uppercase tracking-wider text-white">
+              <p className="text-xs font-bold font-display uppercase tracking-wider text-neutral-900">
                 {settings.editorialOverlayTitle || 'STUDIO SUMSUM ARCHIVE'}
               </p>
             </div>

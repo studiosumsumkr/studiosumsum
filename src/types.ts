@@ -149,6 +149,15 @@ export interface SiteSettings {
   
   // Global Layout
   sectionSpacing: LayoutSettings;
+
+  // New CMS Customizations
+  customCss?: string;
+  enableWatermark?: boolean;
+  watermarkText?: string;
+  promoDiscountCode?: string;
+  promoDiscountPercent?: number;
+  promoDiscountActive?: boolean;
+  couponTitle?: string;
 }
 
 export interface Product {
@@ -166,6 +175,40 @@ export interface Product {
   isNewProduct?: boolean;
   isBestSeller?: boolean;
   views?: number;
+}
+
+export interface ProductReview {
+  id: string;
+  productId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  photoUrl?: string;
+}
+
+export interface StockAlert {
+  id: string;
+  productId: string;
+  contact: string;
+  createdAt: string;
+  notified?: boolean;
+}
+
+export interface CouponClaim {
+  id: string;
+  phoneNumber: string;
+  couponCode: string;
+  claimedAt: string;
+  status?: 'NEW' | 'CONTACTED' | 'USED';
+  note?: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  action: string;
+  details: string;
+  timestamp: string;
 }
 
 export interface SectionContent {

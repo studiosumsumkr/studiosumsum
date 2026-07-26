@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, ShoppingBag, User, Search, Instagram, Twitter, Facebook, Heart } from 'lucide-react';
+import { Menu, X, ShoppingBag, User, Search, Instagram, Twitter, Facebook, Heart, ArrowRightLeft, Ticket } from 'lucide-react';
 import { useCMS } from '../cms';
 import { getTypographyStyle } from '../utils';
+import { CurrencySelector } from './CurrencySelector';
+import { ThemeModeToggle } from './ThemeModeToggle';
 
 interface NavbarProps {
   onAdminClick: () => void;
   onCartClick?: () => void;
   onWishlistClick?: () => void;
+  onCompareClick?: () => void;
+  onCouponClick?: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onAdminClick, onWishlistClick, searchQuery, setSearchQuery }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onAdminClick, onWishlistClick, onCompareClick, onCouponClick, searchQuery, setSearchQuery }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { settings, products, wishlist, updateSettings } = useCMS();
+  const { settings, products, wishlist, compareList, updateSettings } = useCMS();
   const location = useLocation();
 
 
@@ -105,7 +109,39 @@ export const Navbar: React.FC<NavbarProps> = ({ onAdminClick, onWishlistClick, s
           </div>
 
           {/* Right Icons */}
-          <div className={`flex items-center space-x-4 md:space-x-6 ${textColor} shrink-0`}>
+          <div className={`flex items-center space-x-3 md:space-x-4 ${textColor} shrink-0`}>
+            {/* Currency Selector & Theme Toggle */}
+            <div className="hidden xl:flex items-center space-x-2">
+              <CurrencySelector />
+              <ThemeModeToggle />
+            </div>
+
+            {/* Coupon Trigger Button */}
+            {onCouponClick && (
+              <button
+                onClick={onCouponClick}
+                className="flex items-center space-x-1.5 px-3 py-1 bg-amber-500/10 hover:bg-amber-500 text-amber-800 dark:text-amber-300 hover:text-black dark:hover:text-black border border-amber-500/30 rounded-full transition-all text-xs font-bold cursor-pointer shadow-xs group"
+                title="시크릿 할인 쿠폰 받기"
+              >
+                <Ticket className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:text-black transition-colors" />
+                <span className="font-sans font-extrabold tracking-tight">쿠폰 받기</span>
+              </button>
+            )}
+
+            {/* Compare Drawer Trigger */}
+            <button
+              onClick={onCompareClick}
+              className="hover:opacity-70 transition-all relative flex items-center justify-center p-1"
+              title="Compare Products (상품 비교)"
+            >
+              <ArrowRightLeft className="w-5 h-5 md:w-5 md:h-5" />
+              {compareList.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-[8px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center">
+                  {compareList.length}
+                </span>
+              )}
+            </button>
+
             {/* Language Toggle */}
             <button 
               onClick={handleLanguageToggle}
@@ -205,6 +241,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onAdminClick, onWishlistClick, s
                   {link.name}
                 </Link>
               ))}
+
+              {onCouponClick && (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onCouponClick();
+                  }}
+                  className="flex items-center space-x-3 text-xl font-sans font-bold text-amber-800 bg-amber-100 p-4 rounded-xl border border-amber-300 shadow-sm"
+                >
+                  <Ticket className="w-6 h-6 text-amber-700" />
+                  <span>{settings?.promoDiscountPercent || 15}% 특별 쿠폰 받기</span>
+                </button>
+              )}
             </div>
             <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center">
               <div className="flex space-x-6">

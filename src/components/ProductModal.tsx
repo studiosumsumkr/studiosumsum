@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ExternalLink, ArrowRight, Share2, Heart, CheckCircle2 } from 'lucide-react';
+import { X, ExternalLink, ArrowRight, Share2, Heart, CheckCircle2, QrCode, ArrowRightLeft, Bell } from 'lucide-react';
 import { Product } from '../types';
 import { useCMS } from '../cms';
 import { ImageWithFallback } from './ImageWithFallback';
-
+import { ImageMagnifier } from './ImageMagnifier';
+import { QrCodeModal } from './QrCodeModal';
+import { ProductBadges } from './ProductBadges';
+import { ProductReviews } from './ProductReviews';
+import { ProductFAQ } from './ProductFAQ';
+import { StockAlertModal } from './StockAlertModal';
+import { formatPrice } from '../utils/currency';
 
 interface ProductModalProps {
   product: Product | null;
@@ -19,14 +25,17 @@ const formatUrl = (url?: string) => {
 };
 
 export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
-  const { settings, wishlist, toggleWishlist } = useCMS();
+  const { settings, wishlist, toggleWishlist, compareList, toggleCompare, currency } = useCMS();
   const [selectedSize, setSelectedSize] = useState<string | null>('ONE SIZE');
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [showStockAlertModal, setShowStockAlertModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const sizes = ['ONE SIZE', 'STANDARD', 'LARGE'];
   const buyLink = product?.buyUrl || product?.link;
   const isWishlisted = product ? wishlist.includes(product.id) : false;
+  const isCompared = product ? compareList.includes(product.id) : false;
   const isSoldOut = product?.inStock === false;
 
   const handleShare = async () => {
@@ -107,45 +116,52 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
               <X className="w-5 h-5" />
             </button>
 
-            {/* Product Image */}
-            <div className="w-full md:w-1/2 h-64 md:h-full bg-[#F9F9F9] border-b md:border-b-0 md:border-r border-[#E5E5E5] relative overflow-hidden group p-4 flex items-center justify-center">
-              <ImageWithFallback 
-                src={product.imageUrl} 
+            {/* Product Image with Zoom Lens */}
+            <div className="w-full md:w-1/2 h-64 md:h-full bg-[#F9F9F9] dark:bg-neutral-950 border-b md:border-b-0 md:border-r border-[#E5E5E5] dark:border-neutral-800 relative overflow-hidden group flex items-center justify-center">
+              <ProductBadges product={product} />
+
+              <ImageMagnifier 
+                src={product.imageUrl}
+                alt={product.name}
                 imagePosition={product.imagePosition || 'center'}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 rounded-none" 
-                alt={product.name} 
+                className="w-full h-full"
               />
+
+              <span className="absolute bottom-3 left-3 bg-black/60 text-white text-[9px] font-mono px-2 py-0.5 rounded pointer-events-none opacity-70">
+                🔍 마우스 확대 렌즈
+              </span>
             </div>
 
-
             {/* Product Details */}
-            <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col overflow-y-auto bg-[#FFFFFF]">
+            <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col overflow-y-auto bg-[#FFFFFF] dark:bg-neutral-900 text-neutral-900 dark:text-white">
               <div className="flex-1">
-                <div className="mb-10">
-                  <p className="text-[10px] uppercase tracking-[0.12em] font-bold text-[#777777] font-display mb-3">CATEGORY: {product.category}</p>
-                  <h2 className="text-3xl md:text-5xl font-display font-extrabold tracking-[0.12em] uppercase leading-none mb-6 text-[#222222]">
+                <div className="mb-8">
+                  <p className="text-[10px] uppercase tracking-[0.12em] font-bold text-[#777777] font-display mb-2">CATEGORY: {product.category}</p>
+                  <h2 className="text-3xl md:text-5xl font-display font-extrabold tracking-[0.12em] uppercase leading-none mb-4 text-[#222222] dark:text-white">
                     {product.name}
                   </h2>
-                  <p className="text-2xl font-serif italic text-[#1E291B]">${product.price.toLocaleString()}</p>
+                  <p className="text-2xl font-mono font-extrabold text-[#111111] dark:text-white">
+                    {formatPrice(product.price, currency)}
+                  </p>
                 </div>
 
-                <div className="space-y-10 mb-12">
+                <div className="space-y-8 mb-8">
                    <div className="space-y-4">
-                    <div className="flex justify-between items-center pb-2 border-b border-[#E5E5E5]">
-                      <label className="text-[10px] uppercase tracking-[0.12em] font-bold text-[#222222] font-display">SELECT OPTION</label>
+                    <div className="flex justify-between items-center pb-2 border-b border-[#E5E5E5] dark:border-neutral-800">
+                      <label className="text-[10px] uppercase tracking-[0.12em] font-bold text-[#222222] dark:text-white font-display">SELECT OPTION</label>
                       <button 
                         onClick={() => setShowSizeGuide(true)}
-                        className="text-[9px] uppercase tracking-[0.12em] font-bold text-[#777777] hover:text-[#222222] transition-colors underline font-display"
+                        className="text-[9px] uppercase tracking-[0.12em] font-bold text-[#777777] hover:text-[#222222] dark:hover:text-white transition-colors underline font-display cursor-pointer"
                       >
                         SPECS & DIMENSIONS
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2.5 pt-2">
+                    <div className="flex flex-wrap gap-2.5 pt-1">
                        {sizes.map(size => (
                           <button
                             key={size}
                             onClick={() => setSelectedSize(size)}
-                            className={`px-5 h-12 min-w-20 flex items-center justify-center text-[10px] uppercase tracking-[0.12em] font-bold border transition-all rounded-none ${selectedSize === size ? 'bg-[#111111] text-[#FFFFFF] border-[#111111] scale-102' : 'bg-transparent border-[#E5E5E5] text-[#222222] hover:border-[#111111]'}`}
+                            className={`px-5 h-11 flex items-center justify-center text-[10px] uppercase tracking-[0.12em] font-bold border transition-all cursor-pointer ${selectedSize === size ? 'bg-[#111111] text-[#FFFFFF] dark:bg-white dark:text-black border-[#111111]' : 'bg-transparent border-[#E5E5E5] dark:border-neutral-800 text-[#222222] dark:text-neutral-300'}`}
                           >
                             {size}
                           </button>
@@ -153,60 +169,65 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-[10px] uppercase tracking-[0.12em] font-bold text-[#222222] font-display">PRODUCT DESCRIPTION</label>
-                    <p className="text-sm font-sans tracking-[-0.02em] leading-[1.65] text-[#777777] max-w-lg">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-[0.12em] font-bold text-[#222222] dark:text-white font-display">PRODUCT DESCRIPTION</label>
+                    <p className="text-xs md:text-sm font-sans tracking-tight leading-relaxed text-neutral-600 dark:text-neutral-300 max-w-lg">
                       {product.description || "A masterfully crafted piece designed for the modern silhouette. Made with premium materials and attention to every detail."}
                     </p>
                   </div>
+
+                  <ProductFAQ />
+
+                  <ProductReviews productId={product.id} />
                 </div>
               </div>
 
-              <div className="space-y-4 pt-8 border-t border-[#E5E5E5]">
-                {/* Action Buttons: Wishlist & Share */}
-                <div className="flex gap-3 mb-2">
+              <div className="space-y-3 pt-6 border-t border-[#E5E5E5] dark:border-neutral-800">
+                {/* Action Buttons: Wishlist & Compare & QR & Share */}
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => toggleWishlist(product.id)}
-                    className={`flex-1 py-3 px-4 border text-[10px] font-bold uppercase tracking-widest flex items-center justify-center space-x-2 transition-all cursor-pointer ${
-                      isWishlisted ? 'bg-rose-50 text-rose-600 border-rose-300' : 'bg-white text-neutral-700 border-neutral-200 hover:border-black'
+                    className={`py-2.5 px-2 border text-[9px] font-bold uppercase tracking-wider flex items-center justify-center space-x-1 transition-all cursor-pointer ${
+                      isWishlisted ? 'bg-rose-50 text-rose-600 border-rose-300' : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-700'
                     }`}
                   >
-                    <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
-                    <span>{isWishlisted ? 'WISH LISTED' : 'ADD TO WISHLIST'}</span>
+                    <Heart className={`w-3.5 h-3.5 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
+                    <span>{isWishlisted ? 'SAVED' : 'WISHLIST'}</span>
                   </button>
 
                   <button
-                    onClick={handleShare}
-                    className="py-3 px-4 bg-white text-neutral-700 border border-neutral-200 hover:border-black text-[10px] font-bold uppercase tracking-widest flex items-center justify-center space-x-2 transition-all cursor-pointer relative"
-                    title="상품 링크 복사 및 공유"
+                    onClick={() => toggleCompare(product.id)}
+                    className={`py-2.5 px-2 border text-[9px] font-bold uppercase tracking-wider flex items-center justify-center space-x-1 transition-all cursor-pointer ${
+                      isCompared ? 'bg-emerald-50 text-emerald-600 border-emerald-300' : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-700'
+                    }`}
                   >
-                    {copied ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span className="text-emerald-700">복사됨!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 className="w-4 h-4" />
-                        <span>공유하기</span>
-                      </>
-                    )}
+                    <ArrowRightLeft className="w-3.5 h-3.5" />
+                    <span>{isCompared ? 'COMPARING' : 'COMPARE'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowQrModal(true)}
+                    className="py-2.5 px-2 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 text-[9px] font-bold uppercase tracking-wider flex items-center justify-center space-x-1 cursor-pointer"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>MOBILE QR</span>
                   </button>
                 </div>
 
                 {isSoldOut ? (
                   <button 
-                    disabled
-                    className="w-full py-5 text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-3 bg-neutral-200 text-neutral-500 border border-neutral-300 cursor-not-allowed"
+                    onClick={() => setShowStockAlertModal(true)}
+                    className="w-full py-4 text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-2 bg-amber-500 text-black border border-amber-500 cursor-pointer hover:bg-amber-400 transition-all"
                   >
-                    <span>SOLD OUT (품절된 상품입니다)</span>
+                    <Bell className="w-4 h-4" />
+                    <span>SOLD OUT — 재입고 알림 신청하기</span>
                   </button>
                 ) : buyLink ? (
                   <a 
                     href={formatUrl(buyLink)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-5 transition-all text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-3 bg-[#111111] text-[#FFFFFF] hover:bg-[#333333] border border-[#111111] cursor-pointer"
+                    className="w-full py-4 transition-all text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-3 bg-[#111111] text-[#FFFFFF] dark:bg-white dark:text-black border border-[#111111] cursor-pointer"
                   >
                     <span>BUY NOW (구매하기)</span>
                     <ExternalLink className="w-4 h-4" />
@@ -216,7 +237,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                     onClick={() => {
                       alert("등록된 구매 링크가 없습니다. 어드민 관리자 페이지에서 상품 구매 링크(URL)를 설정하실 수 있습니다.");
                     }}
-                    className="w-full py-5 transition-all text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-3 bg-[#111111] text-[#FFFFFF] hover:bg-[#333333] border border-[#111111] cursor-pointer"
+                    className="w-full py-4 transition-all text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-3 bg-[#111111] text-[#FFFFFF] dark:bg-white dark:text-black border border-[#111111] cursor-pointer"
                   >
                     <span>BUY NOW (구매하기)</span>
                     <ArrowRight className="w-4 h-4" />
@@ -224,6 +245,18 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                 )}
               </div>
             </div>
+
+            <QrCodeModal
+              isOpen={showQrModal}
+              onClose={() => setShowQrModal(false)}
+              title={product.name}
+            />
+
+            <StockAlertModal
+              isOpen={showStockAlertModal}
+              onClose={() => setShowStockAlertModal(false)}
+              product={product}
+            />
           </motion.div>
         </>
       )}

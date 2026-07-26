@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Banner, SiteSettings, SectionContent, Product } from './types';
+import { Banner, SiteSettings, SectionContent, Product, ProductReview, StockAlert, CouponClaim, ActivityLog } from './types';
 import { db, doc, setDoc, onSnapshot } from './lib/firebase';
 
 const STORAGE_KEY = 'studio_sumsum_v6_cool_props_data';
@@ -12,6 +12,14 @@ interface CMSData {
   products: Product[];
   cart: { productId: string, quantity: number }[];
   wishlist: string[];
+  recentlyViewed?: string[];
+  compareList?: string[];
+  currency?: 'USD' | 'KRW' | 'EUR' | 'JPY';
+  themeMode?: 'light' | 'dark' | 'ambient';
+  reviews?: ProductReview[];
+  stockAlerts?: StockAlert[];
+  couponClaims?: CouponClaim[];
+  activityLogs?: ActivityLog[];
   updatedAt?: number;
 }
 
@@ -459,6 +467,128 @@ export const useCMS = () => {
     });
   };
 
+  const addRecentlyViewed = (productId: string) => {
+    setData(prev => {
+      const current = prev.recentlyViewed || [];
+      const filtered = current.filter(id => id !== productId);
+      const updated = [productId, ...filtered].slice(0, 10);
+      return { ...prev, recentlyViewed: updated };
+    });
+  };
+
+  const toggleCompare = (productId: string) => {
+    setData(prev => {
+      const current = prev.compareList || [];
+      if (current.includes(productId)) {
+        return { ...prev, compareList: current.filter(id => id !== productId) };
+      }
+      if (current.length >= 4) {
+        alert("비교함에는 최대 4개의 상품만 담을 수 있습니다.");
+        return prev;
+      }
+      return { ...prev, compareList: [...current, productId] };
+    });
+  };
+
+  const clearCompare = () => {
+    setData(prev => ({ ...prev, compareList: [] }));
+  };
+
+  const setCurrency = (curr: 'USD' | 'KRW' | 'EUR' | 'JPY') => {
+    setData(prev => ({ ...prev, currency: curr }));
+  };
+
+  const setThemeMode = (mode: 'light' | 'dark' | 'ambient') => {
+    setData(prev => ({ ...prev, themeMode: mode }));
+  };
+
+  const addReview = (review: Omit<ProductReview, 'id' | 'createdAt'>) => {
+    const newRev: ProductReview = {
+      ...review,
+      id: Date.now().toString(),
+      createdAt: new Date().toLocaleDateString('ko-KR')
+    };
+    setData(prev => {
+      const updated = [newRev, ...(prev.reviews || [])];
+      return { ...prev, reviews: updated };
+    });
+  };
+
+  const addStockAlert = (productId: string, contact: string) => {
+    const newAlert: StockAlert = {
+      id: Date.now().toString(),
+      productId,
+      contact,
+      createdAt: new Date().toLocaleString('ko-KR'),
+      notified: false
+    };
+    setData(prev => {
+      const updated = [newAlert, ...(prev.stockAlerts || [])];
+      return { ...prev, stockAlerts: updated };
+    });
+  };
+
+  const addCouponClaim = (phoneNumber: string, couponCode: string = 'SUMSUM15') => {
+    const newClaim: CouponClaim = {
+      id: Date.now().toString(),
+      phoneNumber,
+      couponCode,
+      claimedAt: new Date().toLocaleString('ko-KR'),
+      status: 'NEW'
+    };
+    setData(prev => {
+      const updated = [newClaim, ...(prev.couponClaims || [])];
+      return { ...prev, couponClaims: updated };
+    });
+    logActivity('쿠폰 신청', `전화번호: ${phoneNumber} (코드: ${couponCode})`);
+  };
+
+  const deleteCouponClaim = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      couponClaims: (prev.couponClaims || []).filter(c => c.id !== id)
+    }));
+  };
+
+  const updateCouponClaimStatus = (id: string, status: 'NEW' | 'CONTACTED' | 'USED') => {
+    setData(prev => ({
+      ...prev,
+      couponClaims: (prev.couponClaims || []).map(c => c.id === id ? { ...c, status } : c)
+    }));
+  };
+
+  const logActivity = (action: string, details: string) => {
+    const newLog: ActivityLog = {
+      id: Date.now().toString(),
+      action,
+      details,
+      timestamp: new Date().toLocaleTimeString('ko-KR')
+    };
+    setData(prev => ({
+      ...prev,
+      activityLogs: [newLog, ...(prev.activityLogs || [])].slice(0, 30)
+    }));
+  };
+
+  const duplicateProduct = (productId: string) => {
+    setData(prev => {
+      const target = prev.products.find(p => p.id === productId);
+      if (!target) return prev;
+      const copy: Product = {
+        ...target,
+        id: Date.now().toString(),
+        name: `${target.name} (Copy)`
+      };
+      return { ...prev, products: [copy, ...prev.products] };
+    });
+    logActivity('상품 복제', `상품 ID: ${productId} 복제 생성`);
+  };
+
+  const bulkUpdateProducts = (updatedProducts: Product[]) => {
+    setData(prev => ({ ...prev, products: updatedProducts }));
+    logActivity('일괄 수정', `상품 ${updatedProducts.length}개 일괄 변경`);
+  };
+
   const resetToDefaultData = async () => {
     const freshData = {
       ...DEFAULT_DATA,
@@ -547,6 +677,14 @@ export const useCMS = () => {
     products: data.products, 
     cart: data.cart,
     wishlist: data.wishlist,
+    recentlyViewed: data.recentlyViewed || [],
+    compareList: data.compareList || [],
+    currency: data.currency || 'USD',
+    themeMode: data.themeMode || 'light',
+    reviews: data.reviews || [],
+    stockAlerts: data.stockAlerts || [],
+    couponClaims: data.couponClaims || [],
+    activityLogs: data.activityLogs || [],
     loading,
     dbConnected,
     storageError,
@@ -564,6 +702,19 @@ export const useCMS = () => {
     updateCartQuantity,
     clearCart,
     toggleWishlist,
+    addRecentlyViewed,
+    toggleCompare,
+    clearCompare,
+    setCurrency,
+    setThemeMode,
+    addReview,
+    addStockAlert,
+    addCouponClaim,
+    deleteCouponClaim,
+    updateCouponClaimStatus,
+    logActivity,
+    duplicateProduct,
+    bulkUpdateProducts,
     resetToDefaultData,
     forcePublishToCloud,
     exportJsonBackup,

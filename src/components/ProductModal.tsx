@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ExternalLink, ArrowRight } from 'lucide-react';
+import { X, ExternalLink, ArrowRight, Share2, Heart, CheckCircle2 } from 'lucide-react';
 import { Product } from '../types';
 import { useCMS } from '../cms';
+import { ImageWithFallback } from './ImageWithFallback';
+
 
 interface ProductModalProps {
   product: Product | null;
@@ -17,12 +19,36 @@ const formatUrl = (url?: string) => {
 };
 
 export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
-  const { settings } = useCMS();
-  const [selectedSize, setSelectedSize] = React.useState<string | null>('ONE SIZE');
-  const [showSizeGuide, setShowSizeGuide] = React.useState(false);
+  const { settings, wishlist, toggleWishlist } = useCMS();
+  const [selectedSize, setSelectedSize] = useState<string | null>('ONE SIZE');
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const sizes = ['ONE SIZE', 'STANDARD', 'LARGE'];
   const buyLink = product?.buyUrl || product?.link;
+  const isWishlisted = product ? wishlist.includes(product.id) : false;
+  const isSoldOut = product?.inStock === false;
+
+  const handleShare = async () => {
+    const currentUrl = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product?.name || 'STUDIO SUMSUM',
+          text: product?.description,
+          url: currentUrl
+        });
+        return;
+      } catch (e) {}
+    }
+    try {
+      await navigator.clipboard.writeText(currentUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      alert("링크 주소: " + currentUrl);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -82,14 +108,15 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
             </button>
 
             {/* Product Image */}
-            <div className="w-full md:w-1/2 h-64 md:h-full bg-[#F9F9F9] border-b md:border-b-0 md:border-r border-[#E5E5E5] relative overflow-hidden group p-4">
-              <img 
+            <div className="w-full md:w-1/2 h-64 md:h-full bg-[#F9F9F9] border-b md:border-b-0 md:border-r border-[#E5E5E5] relative overflow-hidden group p-4 flex items-center justify-center">
+              <ImageWithFallback 
                 src={product.imageUrl} 
-                style={{ objectPosition: product.imagePosition || 'center' }}
-                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-102 rounded-none" 
+                imagePosition={product.imagePosition || 'center'}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 rounded-none" 
                 alt={product.name} 
               />
             </div>
+
 
             {/* Product Details */}
             <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col overflow-y-auto bg-[#FFFFFF]">
@@ -136,7 +163,45 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
               </div>
 
               <div className="space-y-4 pt-8 border-t border-[#E5E5E5]">
-                {buyLink ? (
+                {/* Action Buttons: Wishlist & Share */}
+                <div className="flex gap-3 mb-2">
+                  <button
+                    onClick={() => toggleWishlist(product.id)}
+                    className={`flex-1 py-3 px-4 border text-[10px] font-bold uppercase tracking-widest flex items-center justify-center space-x-2 transition-all cursor-pointer ${
+                      isWishlisted ? 'bg-rose-50 text-rose-600 border-rose-300' : 'bg-white text-neutral-700 border-neutral-200 hover:border-black'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
+                    <span>{isWishlisted ? 'WISH LISTED' : 'ADD TO WISHLIST'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleShare}
+                    className="py-3 px-4 bg-white text-neutral-700 border border-neutral-200 hover:border-black text-[10px] font-bold uppercase tracking-widest flex items-center justify-center space-x-2 transition-all cursor-pointer relative"
+                    title="상품 링크 복사 및 공유"
+                  >
+                    {copied ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span className="text-emerald-700">복사됨!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-4 h-4" />
+                        <span>공유하기</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {isSoldOut ? (
+                  <button 
+                    disabled
+                    className="w-full py-5 text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-3 bg-neutral-200 text-neutral-500 border border-neutral-300 cursor-not-allowed"
+                  >
+                    <span>SOLD OUT (품절된 상품입니다)</span>
+                  </button>
+                ) : buyLink ? (
                   <a 
                     href={formatUrl(buyLink)}
                     target="_blank"

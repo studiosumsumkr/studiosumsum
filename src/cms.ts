@@ -277,37 +277,45 @@ export const useCMS = () => {
     };
   }, []);
 
-  // Primary function to push data to Cloud DB
-  const pushToFirestore = async (cmsData: CMSData): Promise<boolean> => {
+  // Primary function to push data to Cloud DB with auto-retry
+  const pushToFirestore = async (cmsData: CMSData, retries = 3): Promise<boolean> => {
     if (quotaExceededRef.current) {
       setSyncStatus('error');
       setSyncErrorMessage("Firestore 일일 할당량이 초과되어 로컬 저장소에만 보관됩니다.");
       return false;
     }
 
-    try {
-      setSyncStatus('saving');
-      const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
-      const { cart, wishlist, ...cmsPayload } = cmsData;
-      
-      const payloadString = JSON.stringify(cmsPayload);
-      if (payloadString.length > 950000) {
-        setSyncStatus('error');
-        setSyncErrorMessage("이미지 용량이 너무 큽니다. (1MB 제한) 이미지를 더 가볍게 줄여서 다시 올려주세요.");
-        return false;
-      }
-
-      await setDoc(docRef, cmsPayload, { merge: true });
-      setSyncStatus('saved');
-      setSyncErrorMessage(null);
-      return true;
-    } catch (err: any) {
-      console.error("Firestore sync error:", err);
+    const { cart, wishlist, ...cmsPayload } = cmsData;
+    const payloadString = JSON.stringify(cmsPayload);
+    
+    if (payloadString.length > 950000) {
       setSyncStatus('error');
-      setSyncErrorMessage(err?.message || "클라우드 저장 실패");
+      setSyncErrorMessage("이미지 데이터 용량이 큽니다. (1MB 제한) 이미지를 더 작거나 가볍게 변경해 주세요.");
       return false;
     }
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        setSyncStatus('saving');
+        const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
+        await setDoc(docRef, cmsPayload, { merge: true });
+        setSyncStatus('saved');
+        setSyncErrorMessage(null);
+        return true;
+      } catch (err: any) {
+        console.warn(`Firestore sync attempt ${attempt} failed:`, err);
+        if (attempt === retries) {
+          setSyncStatus('error');
+          setSyncErrorMessage(err?.message || "클라우드 동기화 실패 (오프라인 로컬 저장 중)");
+          return false;
+        }
+        // Wait 800ms before retrying
+        await new Promise(r => setTimeout(r, 800 * attempt));
+      }
+    }
+    return false;
   };
+
 
   // Sync to localStorage & Debounced Firestore Sync
   useEffect(() => {
@@ -493,6 +501,45 @@ export const useCMS = () => {
     }
   };
 
+  const exportJsonBackup = () => {
+    const backupObj = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      cmsData: data
+    };
+    const jsonStr = JSON.stringify(backupObj, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `studiosumsum-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importJsonBackup = async (jsonText: string) => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      const incoming = parsed.cmsData || parsed;
+      if (!incoming || typeof incoming !== 'object') {
+        throw new Error('유효하지 않은 백업 데이터 형식입니다.');
+      }
+      const restoredData: CMSData = {
+        ...DEFAULT_DATA,
+        ...incoming,
+        updatedAt: Date.now()
+      };
+      setData(restoredData);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(restoredData));
+      const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
+      const { cart, wishlist, ...cmsPayload } = restoredData;
+      await setDoc(docRef, cmsPayload);
+      alert("✅ 성공적으로 백업 데이터를 불러왔으며, 클라우드 DB와 화면이 복구되었습니다!");
+    } catch (err: any) {
+      alert(`❌ 백업 파일 복원 실패: ${err?.message || '오류가 발생했습니다.'}`);
+    }
+  };
+
   return { 
     banners: data.banners, 
     settings: data.settings, 
@@ -518,6 +565,8 @@ export const useCMS = () => {
     clearCart,
     toggleWishlist,
     resetToDefaultData,
-    forcePublishToCloud
+    forcePublishToCloud,
+    exportJsonBackup,
+    importJsonBackup
   };
 };

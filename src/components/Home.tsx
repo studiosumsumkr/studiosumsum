@@ -1,6 +1,6 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import { useCMS } from '../cms';
 import { HeroSlider } from './HeroSlider';
 import { 
@@ -17,7 +17,11 @@ import {
   Filter,
   Package,
   Layers,
-  Compass
+  Compass,
+  Search,
+  ArrowUpDown,
+  History,
+  X
 } from 'lucide-react';
 import { getTypographyStyle, getLayoutSpacing } from '../utils';
 import { Product } from '../types';
@@ -25,7 +29,39 @@ import { Product } from '../types';
 export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void }) => {
   const { settings, banners, products } = useCMS();
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'recommended' | 'price-asc' | 'price-desc' | 'newest'>('recommended');
   
+  // Recently viewed products history
+  const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('sumsum_recently_viewed');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isRecentOpen, setIsRecentOpen] = useState(false);
+
+  const handleProductSelect = (product: Product) => {
+    // Add to recently viewed history
+    setRecentlyViewedIds(prev => {
+      const filtered = prev.filter(id => id !== product.id);
+      const updated = [product.id, ...filtered].slice(0, 6);
+      try {
+        localStorage.setItem('sumsum_recently_viewed', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    onProductClick?.(product);
+  };
+
+  const recentlyViewedProducts = useMemo(() => {
+    return recentlyViewedIds
+      .map(id => products.find(p => p.id === id))
+      .filter((p): p is Product => p !== undefined);
+  }, [recentlyViewedIds, products]);
+
   const editorialRef = useRef(null);
   const { scrollYProgress: editorialProgress } = useScroll({
     target: editorialRef,
@@ -43,14 +79,39 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
     return ['ALL', ...Array.from(cats)];
   }, [products]);
 
-  // Filter products
+  // Filter & Sort products
   const filteredProducts = useMemo(() => {
-    if (activeCategory === 'ALL') return products;
-    return products.filter(p => p.category?.toUpperCase() === activeCategory);
-  }, [products, activeCategory]);
+    let result = products;
+
+    if (activeCategory !== 'ALL') {
+      result = result.filter(p => p.category?.toUpperCase() === activeCategory);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        p.description.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q)
+      );
+    }
+
+    // Sorting
+    const sorted = [...result];
+    if (sortBy === 'price-asc') {
+      sorted.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'price-desc') {
+      sorted.sort((a, b) => b.price - a.price);
+    } else if (sortBy === 'newest') {
+      sorted.sort((a, b) => (b.isNewProduct ? 1 : 0) - (a.isNewProduct ? 1 : 0));
+    }
+
+    return sorted;
+  }, [products, activeCategory, searchQuery, sortBy]);
 
   const handleBuyNow = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
+    handleProductSelect(product);
     const url = product.buyUrl || product.link;
     if (url) {
       const formatted = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
@@ -103,7 +164,7 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
 
       {/* Main Curated Shop Collection Section */}
       <section id="featured" className="scroll-mt-32 py-20 lg:py-32 max-w-7xl mx-auto px-6 relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 pb-6 border-b border-[#E5E5E5]">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 pb-6 border-b border-[#E5E5E5]">
           <div className="space-y-2">
             <div className="inline-flex items-center space-x-2">
               <span className="w-1.5 h-1.5 rounded-full bg-neutral-900" />
@@ -134,9 +195,52 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
           </div>
         </div>
 
+        {/* Search & Sort Tool Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-3 border border-neutral-200">
+          {/* Search Input */}
+          <div className="relative w-full sm:w-72 flex items-center">
+            <Search className="w-4 h-4 text-neutral-400 absolute left-3 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="상품 검색 (Search object)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full text-xs font-sans pl-9 pr-3 py-2 bg-neutral-50 border border-neutral-200 focus:outline-none focus:border-black transition-colors"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 text-neutral-400 hover:text-black">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Result Count & Sorting */}
+          <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto space-x-4">
+            <span className="text-[11px] font-mono font-bold text-neutral-500">
+              전체 <strong className="text-black">{filteredProducts.length}</strong>개 상품
+            </span>
+
+            <div className="flex items-center space-x-2 border-l border-neutral-200 pl-4">
+              <ArrowUpDown className="w-3.5 h-3.5 text-neutral-400" />
+              <select
+                value={sortBy}
+                onChange={(e: any) => setSortBy(e.target.value)}
+                className="text-xs font-bold font-sans bg-transparent py-1.5 focus:outline-none cursor-pointer"
+              >
+                <option value="recommended">추천순 (Default)</option>
+                <option value="newest">신상품순 (Newest)</option>
+                <option value="price-asc">가격 낮은순 (Price: Low to High)</option>
+                <option value="price-desc">가격 높은순 (Price: High to Low)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {filteredProducts.map((product, idx) => {
+            const isSoldOut = product.inStock === false;
+
             return (
               <motion.div
                 key={product.id}
@@ -148,47 +252,70 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
               >
                 {/* Image Container */}
                 <div 
-                  onClick={() => onProductClick?.(product)}
+                  onClick={() => handleProductSelect(product)}
                   className="relative aspect-square bg-[#F5F5F5] overflow-hidden cursor-pointer p-4 flex items-center justify-center"
                 >
                   <img
                     src={product.imageUrl}
                     alt={product.name}
                     style={{ objectPosition: product.imagePosition || 'center' }}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 ${isSoldOut ? 'grayscale opacity-75' : ''}`}
                   />
                   
-                  {/* Category Tag */}
-                  {product.category && (
-                    <span className="absolute top-3 left-3 bg-[#111111] text-[#FFFFFF] text-[8px] font-mono uppercase tracking-[0.2em] px-2.5 py-1">
-                      {product.category}
-                    </span>
+                  {/* Category & Status Badges */}
+                  <div className="absolute top-3 left-3 flex flex-col gap-1 items-start z-10">
+                    {product.category && (
+                      <span className="bg-[#111111] text-[#FFFFFF] text-[8px] font-mono uppercase tracking-[0.2em] px-2.5 py-1">
+                        {product.category}
+                      </span>
+                    )}
+                    {product.isNewProduct && (
+                      <span className="bg-emerald-600 text-white text-[8px] font-mono uppercase font-bold tracking-widest px-2 py-0.5">
+                        NEW
+                      </span>
+                    )}
+                    {product.isBestSeller && (
+                      <span className="bg-amber-500 text-white text-[8px] font-mono uppercase font-bold tracking-widest px-2 py-0.5">
+                        BEST
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Sold Out Overlay Badge */}
+                  {isSoldOut && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-10">
+                      <span className="bg-rose-600 text-white text-[10px] font-display font-extrabold uppercase tracking-[0.25em] px-4 py-2 border border-white/20 shadow-lg">
+                        SOLD OUT (품절)
+                      </span>
+                    </div>
                   )}
 
                   {/* Quick Action Overlay */}
-                  <div className="absolute inset-x-3 bottom-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 flex gap-2 z-10">
-                    <button
-                      onClick={(e) => handleBuyNow(e, product)}
-                      className="flex-1 bg-[#111111] text-[#FFFFFF] hover:bg-[#333333] text-[9px] font-display font-bold uppercase tracking-[0.2em] py-2.5 px-3 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      <span>BUY NOW (구매하기)</span>
-                    </button>
-                    <button
-                      onClick={() => onProductClick?.(product)}
-                      className="bg-white text-black border border-neutral-300 hover:border-black p-2.5 flex items-center justify-center transition-colors cursor-pointer"
-                      title="Quick View"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {!isSoldOut && (
+                    <div className="absolute inset-x-3 bottom-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 flex gap-2 z-10">
+                      <button
+                        onClick={(e) => handleBuyNow(e, product)}
+                        className="flex-1 bg-[#111111] text-[#FFFFFF] hover:bg-[#333333] text-[9px] font-display font-bold uppercase tracking-[0.2em] py-2.5 px-3 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>BUY NOW (구매하기)</span>
+                      </button>
+                      <button
+                        onClick={() => handleProductSelect(product)}
+                        className="bg-white text-black border border-neutral-300 hover:border-black p-2.5 flex items-center justify-center transition-colors cursor-pointer"
+                        title="Quick View"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Info Container */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-3 border-t border-[#E5E5E5]">
                   <div>
                     <h3 
-                      onClick={() => onProductClick?.(product)}
+                      onClick={() => handleProductSelect(product)}
                       className="text-sm font-display font-bold text-[#111111] uppercase tracking-wide cursor-pointer hover:text-neutral-600 transition-colors line-clamp-1"
                     >
                       {product.name}
@@ -203,7 +330,7 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
                       ${product.price} <span className="text-[10px] text-neutral-400 font-normal">USD</span>
                     </span>
                     <button
-                      onClick={() => onProductClick?.(product)}
+                      onClick={() => handleProductSelect(product)}
                       className="text-[10px] font-display font-bold text-neutral-500 hover:text-black uppercase tracking-widest inline-flex items-center space-x-1"
                     >
                       <span>DETAILS</span>
@@ -388,6 +515,66 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
           </form>
         </div>
       </section>
+
+      {/* Floating Recently Viewed Products Widget (최근 본 상품) */}
+      {recentlyViewedProducts.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
+          <AnimatePresence>
+            {isRecentOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="mb-3 bg-white border-2 border-black p-4 shadow-2xl w-72 space-y-3"
+              >
+                <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
+                  <div className="flex items-center space-x-1.5">
+                    <History className="w-3.5 h-3.5 text-neutral-800" />
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest font-display text-black">
+                      최근 본 상품 ({recentlyViewedProducts.length})
+                    </span>
+                  </div>
+                  <button onClick={() => setIsRecentOpen(false)} className="text-neutral-400 hover:text-black">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                  {recentlyViewedProducts.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        handleProductSelect(p);
+                        setIsRecentOpen(false);
+                      }}
+                      className="group relative aspect-square border border-neutral-200 hover:border-black p-1 transition-all overflow-hidden bg-neutral-50 text-left cursor-pointer"
+                      title={p.name}
+                    >
+                      <img 
+                        src={p.imageUrl} 
+                        alt={p.name} 
+                        style={{ objectPosition: p.imagePosition || 'center' }}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-black/80 text-white text-[8px] font-bold p-0.5 truncate text-center">
+                        ${p.price}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button
+            onClick={() => setIsRecentOpen(!isRecentOpen)}
+            className="bg-black text-white hover:bg-neutral-800 px-4 py-3 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center space-x-2 cursor-pointer font-display text-[10px] font-bold uppercase tracking-widest"
+          >
+            <History className="w-4 h-4 text-emerald-400" />
+            <span>최근 본 상품 ({recentlyViewedProducts.length})</span>
+          </button>
+        </div>
+      )}
     </main>
   );
 };

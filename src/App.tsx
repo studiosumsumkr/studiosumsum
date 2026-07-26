@@ -92,6 +92,8 @@ import { Home } from './components/Home';
 import { Shop } from './components/Shop';
 import { ProductModal } from './components/ProductModal';
 import { ScrollProgress } from './components/ScrollProgress';
+import { WishlistDrawer } from './components/WishlistDrawer';
+import { NetworkStatusIndicator } from './components/NetworkStatusIndicator';
 import { Product } from './types';
 
 const ScrollToHash = () => {
@@ -111,11 +113,13 @@ const ScrollToHash = () => {
   }, [pathname, hash]);
   return null;
 };
+
 function AppContent() {
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('laura_admin') === 'true');
   const [isAdminView, setIsAdminView] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   
   const { settings, loading } = useCMS();
   const location = useLocation();
@@ -137,6 +141,7 @@ function AppContent() {
     if (!isAdmin) return <Login onBack={() => setIsAdminView(false)} onLogin={() => handleLogin(true)} />;
     return (
       <div className={`relative min-h-screen bg-[#FFFFFF] text-neutral-900 selection:bg-neutral-100 font-set-${settings?.fontSet || 'round'}`}>
+        <NetworkStatusIndicator />
         <Dashboard onLogout={handleLogout} />
       </div>
     );
@@ -144,6 +149,8 @@ function AppContent() {
 
   return (
     <div className={`relative min-h-screen bg-[#FFFFFF] text-neutral-900 selection:bg-neutral-100 font-set-${settings?.fontSet || 'round'}`}>
+      <NetworkStatusIndicator />
+
       {loading && !settings && (
         <div className="fixed inset-0 z-[100] bg-[#FFFFFF] flex items-center justify-center">
           <motion.div 
@@ -162,16 +169,24 @@ function AppContent() {
 
       <Navbar 
         onAdminClick={() => setIsAdminView(true)} 
+        onWishlistClick={() => setIsWishlistOpen(true)}
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
       />
 
       <ScrollToHash />
 
+      <WishlistDrawer
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
+        onProductClick={setSelectedProduct}
+      />
+
       <ProductModal 
         product={selectedProduct} 
         onClose={() => setSelectedProduct(null)} 
       />
+
 
       {settings?.showScrollProgress && <ScrollProgress />}
       

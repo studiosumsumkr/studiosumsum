@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, ShoppingBag, User, Search, Instagram, Twitter, Facebook } from 'lucide-react';
+import { Menu, X, ShoppingBag, User, Search, Instagram, Twitter, Facebook, Heart } from 'lucide-react';
 import { useCMS } from '../cms';
 import { getTypographyStyle } from '../utils';
 
 interface NavbarProps {
   onAdminClick: () => void;
   onCartClick?: () => void;
+  onWishlistClick?: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onAdminClick, searchQuery, setSearchQuery }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onAdminClick, onWishlistClick, searchQuery, setSearchQuery }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { settings, products, updateSettings } = useCMS();
+  const { settings, products, wishlist, updateSettings } = useCMS();
   const location = useLocation();
+
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -155,9 +157,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onAdminClick, searchQuery, setSe
               </AnimatePresence>
             </div>
 
+            {/* Wishlist Trigger */}
+            <button
+              onClick={onWishlistClick}
+              className="hover:opacity-70 transition-all relative flex items-center justify-center p-1"
+              title="Wishlist (관심 상품)"
+            >
+              <Heart className="w-5 h-5 md:w-6 md:h-6" />
+              {wishlist.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[8px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
+                  {wishlist.length}
+                </span>
+              )}
+            </button>
+
             <button onClick={onAdminClick} className="hover:opacity-70 transition-all flex items-center space-x-1" title="Admin Portal">
               <User className="w-5 h-5 md:w-6 md:h-6" />
             </button>
+
           </div>
         </div>
       </nav>

@@ -341,7 +341,8 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
     banners, settings, products, storageError, dbConnected, syncStatus, syncErrorMessage,
     updateSettings, addBanner, updateBanner, deleteBanner, 
     addProduct, updateProduct, deleteProduct,
-    resetToDefaultData, forcePublishToCloud
+    resetToDefaultData, forcePublishToCloud,
+    exportJsonBackup, importJsonBackup
   } = useCMS();
   const [activeTab, setActiveTab] = useState<'banners' | 'settings' | 'products'>('banners');
   const [activeSubTab, setActiveSubTab] = useState<string>('branding');
@@ -583,8 +584,29 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                 </div>
               )}
 
+              {/* Summary Stats Overview Widget */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
+                <div className="bg-neutral-50 p-3 border border-neutral-200">
+                  <span className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider block">등록 배너 (Banners)</span>
+                  <div className="text-xl font-display font-extrabold text-neutral-900 mt-1">{banners.length} <span className="text-xs font-normal text-neutral-500">개</span></div>
+                </div>
+                <div className="bg-neutral-50 p-3 border border-neutral-200">
+                  <span className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider block">전체 상품 (Products)</span>
+                  <div className="text-xl font-display font-extrabold text-neutral-900 mt-1">{products.length} <span className="text-xs font-normal text-neutral-500">개</span></div>
+                </div>
+                <div className="bg-neutral-50 p-3 border border-neutral-200">
+                  <span className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider block">판매 진행 중 (In Stock)</span>
+                  <div className="text-xl font-display font-extrabold text-emerald-700 mt-1">{products.filter(p => p.inStock !== false).length} <span className="text-xs font-normal text-neutral-500">개</span></div>
+                </div>
+                <div className="bg-neutral-50 p-3 border border-neutral-200">
+                  <span className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider block">품절 상품 (Sold Out)</span>
+                  <div className="text-xl font-display font-extrabold text-rose-600 mt-1">{products.filter(p => p.inStock === false).length} <span className="text-xs font-normal text-neutral-500">개</span></div>
+                </div>
+              </div>
+
               {/* Quick Tab Switcher & Cloud Publish Actions */}
               <div className="flex flex-wrap items-center gap-2 mt-5">
+
                 <button 
                   onClick={() => setActiveTab('banners')} 
                   className={`px-4 py-2 text-[10px] font-extrabold uppercase tracking-widest border transition-all cursor-pointer ${activeTab === 'banners' ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-900 hover:text-neutral-900'}`}
@@ -615,6 +637,35 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                 </button>
 
                 <button
+                  onClick={exportJsonBackup}
+                  className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest bg-neutral-900 text-white hover:bg-neutral-800 border border-neutral-800 transition-all cursor-pointer"
+                  title="현재 사이트의 전체 데이터(배너, 상품, 설정)를 백업 파일(.json)로 내보냅니다"
+                >
+                  💾 백업 파일 다운로드 (Export)
+                </button>
+
+                <label className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest bg-neutral-800 text-neutral-200 hover:bg-neutral-700 border border-neutral-700 transition-all cursor-pointer inline-flex items-center">
+                  <span>📂 백업 불러오기 (Import)</span>
+                  <input
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const text = event.target?.result as string;
+                          if (text) importJsonBackup(text);
+                        };
+                        reader.readAsText(file);
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+
+                <button
                   onClick={() => {
                     if (confirm("정말로 예전 클라우드/로컬 데이터를 모두 삭제하고, 최신 기본 원본 코드로 깨끗이 리셋하시겠습니까?")) {
                       resetToDefaultData();
@@ -623,7 +674,7 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                   className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest bg-neutral-100 text-neutral-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border border-neutral-200 transition-all cursor-pointer"
                   title="예전 파편 데이터를 모두 지우고 원본 데이터로 리셋합니다"
                 >
-                  🧹 예전 데이터 완전히 삭제/초기화
+                  🧹 예전 데이터 삭제/초기화
                 </button>
               </div>
             </div>
@@ -732,6 +783,43 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                       type="textarea"
                       aiPrompt={`Write a luxury description for a ${product.category} named ${product.name}`}
                     />
+
+                    {/* Stock & Badge Options */}
+                    <div className="col-span-full grid grid-cols-1 sm:grid-cols-3 gap-4 bg-neutral-50 p-4 border border-neutral-200">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 block mb-2">재고 및 판매 상태</label>
+                        <select
+                          value={product.inStock === false ? 'soldout' : 'instock'}
+                          onChange={(e) => updateProduct(product.id, { inStock: e.target.value === 'instock' })}
+                          className="w-full text-xs font-bold p-2 bg-white border border-neutral-300 focus:outline-none"
+                        >
+                          <option value="instock">✅ 판매 중 (In Stock)</option>
+                          <option value="soldout">❌ 품절 (Sold Out)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 block mb-2">NEW 신상품 뱃지</label>
+                        <button
+                          type="button"
+                          onClick={() => updateProduct(product.id, { isNewProduct: !product.isNewProduct })}
+                          className={`w-full text-xs font-bold py-2 px-3 border transition-all ${product.isNewProduct ? 'bg-black text-white border-black' : 'bg-white text-neutral-500 border-neutral-300'}`}
+                        >
+                          {product.isNewProduct ? '✨ NEW 뱃지 표시 중' : 'NEW 뱃지 없음'}
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 block mb-2">BEST 베스트 뱃지</label>
+                        <button
+                          type="button"
+                          onClick={() => updateProduct(product.id, { isBestSeller: !product.isBestSeller })}
+                          className={`w-full text-xs font-bold py-2 px-3 border transition-all ${product.isBestSeller ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-neutral-500 border-neutral-300'}`}
+                        >
+                          {product.isBestSeller ? '🔥 BEST 뱃지 표시 중' : 'BEST 뱃지 없음'}
+                        </button>
+                      </div>
+                    </div>
                     <div className="col-span-2 flex items-end justify-between">
                       <EditableField 
                         label="Purchase Link (구매 링크 URL)" 

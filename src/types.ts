@@ -161,6 +161,11 @@ export interface Product {
   link?: string;
   buyUrl?: string;
   imagePosition?: string;
+  inStock?: boolean;
+  stockCount?: number;
+  isNewProduct?: boolean;
+  isBestSeller?: boolean;
+  views?: number;
 }
 
 export interface SectionContent {

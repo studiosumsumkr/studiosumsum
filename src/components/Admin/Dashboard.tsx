@@ -192,7 +192,7 @@ const EditableField = ({ label, value, onSave, type = 'text', description, aiPro
   );
 };
 
-const compressImage = async (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.80): Promise<string> => {
+const compressImage = async (file: File, maxWidth = 800, maxHeight = 800, quality = 0.55): Promise<string> => {
   if (!file) return '';
 
   // Try createImageBitmap first for memory-efficient async decoding on high-resolution camera photos
@@ -282,14 +282,14 @@ const compressImage = async (file: File, maxWidth = 1200, maxHeight = 1200, qual
   });
 };
 
-const compressBase64Image = (base64Str: string, maxWidth = 1200, maxHeight = 1200, quality = 0.80): Promise<string> => {
+const compressBase64Image = (base64Str: string, maxWidth = 800, maxHeight = 800, quality = 0.55): Promise<string> => {
   return new Promise((resolve) => {
     if (!base64Str || !base64Str.startsWith('data:image')) {
       resolve(base64Str);
       return;
     }
-    // Skip if already reasonable size (less than ~150KB base64 length)
-    if (base64Str.length < 150000) {
+    // Skip if already small (less than ~80KB base64 length)
+    if (base64Str.length < 80000) {
       resolve(base64Str);
       return;
     }

@@ -456,11 +456,17 @@ export const useCMS = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
       const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
       const { cart, wishlist, ...cmsPayload } = currentData;
+      const jsonString = JSON.stringify(cmsPayload);
+      
+      if (jsonString.length > 950000) {
+        alert("⚠️ [경고] 현재 등록된 이미지 및 데이터 용량이 클라우드 DB 제한(1MB)에 가깝거나 초과했습니다. 데이터 저장이 실패할 수 있으니 이미지를 크기가 작은 파일로 다시 등록해 주세요.");
+      }
+
       await setDoc(docRef, cmsPayload);
-      alert("현재 화면의 최신 데이터가 클라우드 DB에 성공적으로 강제 덮어쓰기(퍼블리시) 되었습니다.");
-    } catch (e) {
+      alert("✅ 현재 화면의 최신 데이터가 클라우드 DB(Firebase)에 성공적으로 퍼블리시 되었습니다!\n이제 Vercel 및 외부 접속자, 모든 모바일/PC 기기에서 동일하게 반영됩니다.");
+    } catch (e: any) {
       console.error("Error publishing to cloud:", e);
-      alert("클라우드 동기화 중 오류가 발생했지만 로컬에는 저장되었습니다.");
+      alert(`❌ 클라우드 동기화 실패: ${e?.message || '알 수 없는 오류'}\n(이미지 파일 크기가 너무 큰 경우일 수 있습니다. 이미지를 더 작게 압축해 주세요.)`);
     }
   };
 

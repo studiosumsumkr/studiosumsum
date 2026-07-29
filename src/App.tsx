@@ -106,6 +106,7 @@ import { ShippingTrackerModal } from './components/ShippingTrackerModal';
 import { GiftFinderModal } from './components/GiftFinderModal';
 import { CouponModal } from './components/CouponModal';
 import { AiConciergeWidget } from './components/AiConciergeWidget';
+import { FloatingSideNav } from './components/FloatingSideNav';
 import { Product } from './types';
 
 const ScrollToHash = () => {
@@ -141,7 +142,7 @@ function AppContent() {
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
 
-  const { settings, loading } = useCMS();
+  const { settings, loading, wishlist = [], compareList = [] } = useCMS();
   const location = useLocation();
 
   const handleLogin = (success: boolean) => {
@@ -195,6 +196,17 @@ function AppContent() {
         onAiClick={() => setIsAiOpen(!isAiOpen)}
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
+      />
+
+      <FloatingSideNav
+        onOpenSearch={() => setIsSearchModalOpen(true)}
+        onOpenWishlist={() => setIsWishlistOpen(true)}
+        onOpenCompare={() => setIsCompareOpen(true)}
+        onOpenCoupon={() => setIsCouponModalOpen(true)}
+        onOpenAi={() => setIsAiOpen(!isAiOpen)}
+        onOpenAdmin={() => setIsAdminView(true)}
+        wishlistCount={wishlist.length}
+        compareCount={compareList.length}
       />
 
       <ScrollToHash />

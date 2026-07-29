@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCMS } from '../../cms';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trash2, Save, LogOut, Image as ImageIcon, Settings, Layout, ShoppingBag, Type, Sparkles, Move, Maximize } from 'lucide-react';
+import { Plus, Trash2, Save, LogOut, Image as ImageIcon, Settings, Layout, ShoppingBag, Type, Sparkles, Move, Maximize, MessageSquare, Bot, BarChart3, ChevronDown, ChevronUp, Layers, Globe, Activity, ShieldCheck, Tag, PhoneCall } from 'lucide-react';
 import { Banner, Product, SiteSettings, TypographySettings, LayoutSettings } from '../../types';
 import { ImageFocalPicker } from './ImageFocalPicker';
 import { AIAssistantModal } from './AIAssistantModal';
@@ -148,6 +148,7 @@ const EditableField = ({ label, value, onSave, type = 'text', description, aiPro
   const handleChange = (newVal: string) => {
     isDirtyRef.current = true;
     setLocalValue(newVal);
+    onSaveRef.current(newVal);
   };
 
   const handleBlur = () => {
@@ -352,13 +353,15 @@ const compressBase64Image = (base64Str: string, maxWidth = 800, maxHeight = 800,
 
 export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const { 
-    banners, settings, products, couponClaims, storageError, dbConnected, syncStatus, syncErrorMessage,
+    banners, settings, products, couponClaims, storageError, dbConnected, syncStatus, syncErrorMessage, inquiries,
     updateSettings, addBanner, updateBanner, deleteBanner, 
     addProduct, updateProduct, deleteProduct,
     resetToDefaultData, forcePublishToCloud,
     exportJsonBackup, importJsonBackup
   } = useCMS();
-  const [activeTab, setActiveTab] = useState<'banners' | 'settings' | 'products'>('banners');
+  const [activeTab, setActiveTab] = useState<'banners' | 'settings' | 'products' | 'qna'>('banners');
+  const [showStatsWidget, setShowStatsWidget] = useState(false);
+  const unansweredCount = (inquiries || []).filter(i => i.status !== 'ANSWERED').length;
   const [activeSubTab, setActiveSubTab] = useState<string>('branding');
   const [showAiModal, setShowAiModal] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
@@ -484,120 +487,223 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   return (
     <div className="min-h-screen bg-white flex flex-col lg:flex-row">
       {/* Sidebar */}
-      <aside className="lg:w-72 bg-white border-b lg:border-b-0 lg:border-r border-neutral-100 p-6 lg:p-10 flex flex-row lg:flex-col items-center lg:items-stretch justify-between lg:justify-start relative z-20 overflow-x-auto lg:overflow-x-visible no-scrollbar">
-        <div className="mb-0 lg:mb-16 flex items-center lg:block shrink-0 mr-8 lg:mr-0">
-          <h1 className="text-2xl lg:text-3xl font-display font-light tracking-tighter uppercase whitespace-nowrap text-neutral-800">{settings?.logoText || "L'AURA"}</h1>
-          <p className="hidden lg:block text-[9px] uppercase tracking-[0.4em] text-neutral-400 font-bold mt-2">Admin Panel</p>
+      <aside className="lg:w-64 w-full bg-white border-b lg:border-b-0 lg:border-r border-neutral-200 p-4 lg:p-6 flex flex-col justify-between shrink-0 lg:sticky lg:top-0 lg:h-screen z-20">
+        <div className="flex flex-col space-y-4 lg:space-y-6">
+          {/* Logo & Header */}
+          <div className="flex items-center justify-between lg:block">
+            <div>
+              <h1 className="text-xl lg:text-2xl font-display font-black tracking-tighter uppercase whitespace-nowrap text-neutral-900">{settings?.logoText || "L'AURA"}</h1>
+              <p className="text-[9px] uppercase tracking-[0.3em] text-amber-600 font-extrabold mt-0.5">ADMIN CONSOLE</p>
+            </div>
+            
+            {/* Mobile Sign Out button */}
+            <button 
+              onClick={onLogout}
+              className="lg:hidden flex items-center space-x-1.5 px-3 py-1.5 text-neutral-500 hover:text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold transition-all border border-neutral-200"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>로그아웃</span>
+            </button>
+          </div>
+          
+          {/* Navigation Links */}
+          <nav className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible no-scrollbar pb-1 lg:pb-0">
+            <button 
+              onClick={() => setActiveTab('banners')}
+              className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 whitespace-nowrap font-bold text-xs shrink-0 ${activeTab === 'banners' ? 'bg-neutral-900 text-white shadow-md' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'}`}
+            >
+              <Layout className="w-4 h-4" />
+              <span>배너 관리</span>
+            </button>
+            
+            <button 
+              onClick={() => setActiveTab('products')}
+              className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 whitespace-nowrap font-bold text-xs shrink-0 ${activeTab === 'products' ? 'bg-neutral-900 text-white shadow-md' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'}`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>상품 관리</span>
+            </button>
+
+            {/* Dedicated Q&A and AI FAQ Button */}
+            <button 
+              onClick={() => setShowInquiryModal(true)}
+              className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500 text-black font-extrabold text-xs hover:bg-amber-400 transition-all shadow-sm whitespace-nowrap cursor-pointer border border-amber-400 shrink-0"
+            >
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="w-4 h-4" />
+                <span>1:1 Q&A / AI FAQ</span>
+              </div>
+              {unansweredCount > 0 ? (
+                <span className="bg-rose-600 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-full font-black animate-pulse">
+                  {unansweredCount}건
+                </span>
+              ) : (
+                <span className="text-[10px] opacity-70 font-mono">관리</span>
+              )}
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 whitespace-nowrap font-bold text-xs shrink-0 ${activeTab === 'settings' ? 'bg-neutral-900 text-white shadow-md' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'}`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>사이트 컨텐츠</span>
+            </button>
+
+            <div className="hidden lg:block border-t border-neutral-200 my-1" />
+
+            <button 
+              onClick={() => setShowStatsWidget(!showStatsWidget)}
+              className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 whitespace-nowrap font-bold text-xs shrink-0 ${showStatsWidget ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'text-neutral-600 hover:bg-neutral-100'}`}
+            >
+              <BarChart3 className="w-4 h-4 text-amber-600" />
+              <span>실시간 통계 {showStatsWidget ? '닫기' : '보기'}</span>
+            </button>
+          </nav>
         </div>
-        
-        <nav className="flex flex-row lg:flex-col space-y-2 lg:space-y-3 shrink-0">
-          <button 
-            onClick={() => setActiveTab('banners')}
-            className={`flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2.5 lg:py-4 rounded-xl transition-all duration-300 whitespace-nowrap ${activeTab === 'banners' ? 'bg-neutral-900 text-white shadow-md' : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-800'}`}
-          >
-            <Layout className="w-4 h-4 lg:w-5 lg:h-5" />
-            <span className="text-[8px] lg:text-[10px] uppercase tracking-[0.2em] lg:tracking-[0.3em] font-black">Banners</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('products')}
-            className={`flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2.5 lg:py-4 rounded-xl transition-all duration-300 whitespace-nowrap ${activeTab === 'products' ? 'bg-neutral-900 text-white shadow-md' : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-800'}`}
-          >
-            <ShoppingBag className="w-4 h-4 lg:w-5 lg:h-5" />
-            <span className="text-[8px] lg:text-[10px] uppercase tracking-[0.2em] lg:tracking-[0.3em] font-black">Products</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2.5 lg:py-4 rounded-xl transition-all duration-300 whitespace-nowrap ${activeTab === 'settings' ? 'bg-neutral-900 text-white shadow-md' : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-800'}`}
-          >
-            <Settings className="w-4 h-4 lg:w-5 lg:h-5" />
-            <span className="text-[8px] lg:text-[10px] uppercase tracking-[0.2em] lg:tracking-[0.3em] font-black">Site Content</span>
-          </button>
 
-          <hr className="border-neutral-200 dark:border-neutral-800 my-2" />
-
-          {/* New Tools */}
+        {/* Desktop Logout Button */}
+        <div className="hidden lg:block pt-4 border-t border-neutral-200 mt-auto">
           <button 
-            onClick={() => setShowAiModal(true)}
-            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500 hover:text-black transition-all whitespace-nowrap border border-amber-500/20 cursor-pointer"
+            onClick={onLogout}
+            className="w-full flex items-center space-x-3 px-3.5 py-2.5 text-neutral-500 hover:text-red-600 transition-all rounded-xl font-bold text-xs hover:bg-red-50 whitespace-nowrap cursor-pointer"
           >
-            <Sparkles className="w-4 h-4" />
-            <span className="text-[9px] uppercase tracking-[0.2em] font-black">AI 카피라이터</span>
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out (로그아웃)</span>
           </button>
-
-          <button 
-            onClick={() => setShowBulkEditModal(true)}
-            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-all whitespace-nowrap border border-neutral-200 dark:border-neutral-700 cursor-pointer"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            <span className="text-[9px] uppercase tracking-[0.2em] font-black">일괄 편집 테이블</span>
-          </button>
-
-          <button 
-            onClick={() => setShowDevicePreviewModal(true)}
-            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-all whitespace-nowrap border border-neutral-200 dark:border-neutral-700 cursor-pointer"
-          >
-            <Maximize className="w-4 h-4" />
-            <span className="text-[9px] uppercase tracking-[0.2em] font-black">디바이스 시뮬레이터</span>
-          </button>
-
-          <button 
-            onClick={() => setShowSeoModal(true)}
-            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-all whitespace-nowrap border border-neutral-200 dark:border-neutral-700 cursor-pointer"
-          >
-            <Settings className="w-4 h-4" />
-            <span className="text-[9px] uppercase tracking-[0.2em] font-black">SEO 메타관리</span>
-          </button>
-
-          <button 
-            onClick={() => setShowDiscountModal(true)}
-            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-all whitespace-nowrap border border-neutral-200 dark:border-neutral-700 cursor-pointer"
-          >
-            <Type className="w-4 h-4" />
-            <span className="text-[9px] uppercase tracking-[0.2em] font-black">할인 프로모션</span>
-          </button>
-
-          <button 
-            onClick={() => setShowCouponLeadsModal(true)}
-            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500 hover:text-black transition-all whitespace-nowrap border border-amber-500/30 cursor-pointer font-bold"
-          >
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span className="text-[9px] uppercase tracking-[0.15em] font-black">
-              쿠폰 전화번호 목록 ({couponClaims?.length || 0})
-            </span>
-          </button>
-
-          <button 
-            onClick={() => setShowLogModal(true)}
-            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-all whitespace-nowrap border border-neutral-200 dark:border-neutral-700 cursor-pointer"
-          >
-            <Move className="w-4 h-4" />
-            <span className="text-[9px] uppercase tracking-[0.2em] font-black">작업 히스토리 로그</span>
-          </button>
-
-          <button 
-            onClick={() => setShowBackupModal(true)}
-            className="flex items-center space-x-2 lg:space-x-4 px-4 lg:px-6 py-2 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all whitespace-nowrap border border-emerald-500/20 cursor-pointer"
-          >
-            <Save className="w-4 h-4" />
-            <span className="text-[9px] uppercase tracking-[0.2em] font-black">백업 / 복구</span>
-          </button>
-        </nav>
-
-        <button 
-          onClick={onLogout}
-          className="ml-4 lg:ml-0 lg:mt-auto flex items-center space-x-2 lg:space-x-4 px-3 lg:px-6 py-2 lg:py-4 text-black/40 hover:text-red-500 transition-all border-2 border-transparent hover:border-red-500 whitespace-nowrap"
-        >
-          <LogOut className="w-4 h-4 lg:w-5 lg:h-5" />
-          <span className="text-[8px] lg:text-[10px] uppercase tracking-[0.2em] lg:tracking-[0.3em] font-black">Sign Out</span>
-        </button>
+        </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-16 overflow-y-auto relative">
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto relative bg-neutral-50/50">
         <div className="noise-bg opacity-20" />
-        <div className="max-w-5xl mx-auto relative z-10 space-y-6">
-          <AdminAnalyticsWidget />
-          <LowStockWidget />
+        <div className="max-w-6xl mx-auto relative z-10 space-y-6">
+
+          {/* Quick Admin Tools Bar */}
+          <div className="bg-neutral-900 text-white p-4 rounded-2xl shadow-xl space-y-3">
+            <div className="flex items-center justify-between text-xs border-b border-neutral-800 pb-2">
+              <span className="font-mono font-bold text-amber-400 flex items-center space-x-1.5">
+                <Sparkles className="w-4 h-4" />
+                <span>관리자 Quick Tools 메뉴</span>
+              </span>
+              <span className="text-[10px] text-neutral-400 font-mono tracking-wider">클릭 시 전용 편집창이 열립니다</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+              <button
+                onClick={() => setShowInquiryModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-amber-500 text-black hover:bg-amber-400 font-extrabold rounded-xl text-xs transition-all shadow-sm cursor-pointer"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Q&A 관리</span>
+                {unansweredCount > 0 && (
+                  <span className="bg-rose-600 text-white text-[9px] font-mono px-1 rounded-full animate-pulse ml-1">
+                    {unansweredCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setShowAiModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-bold transition-all border border-neutral-700 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>AI 카피</span>
+              </button>
+
+              <button
+                onClick={() => setShowBulkEditModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-bold transition-all border border-neutral-700 cursor-pointer"
+              >
+                <ShoppingBag className="w-3.5 h-3.5 text-blue-400" />
+                <span>일괄 편집</span>
+              </button>
+
+              <button
+                onClick={() => setShowCategoryModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-bold transition-all border border-neutral-700 cursor-pointer"
+              >
+                <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                <span>카테고리</span>
+              </button>
+
+              <button
+                onClick={() => setShowDiscountModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-bold transition-all border border-neutral-700 cursor-pointer"
+              >
+                <Tag className="w-3.5 h-3.5 text-rose-400" />
+                <span>할인 프로모션</span>
+              </button>
+
+              <button
+                onClick={() => setShowCouponLeadsModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-bold transition-all border border-neutral-700 cursor-pointer"
+              >
+                <PhoneCall className="w-3.5 h-3.5 text-amber-400" />
+                <span>쿠폰 DB ({couponClaims?.length || 0})</span>
+              </button>
+
+              <button
+                onClick={() => setShowSeoModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-bold transition-all border border-neutral-700 cursor-pointer"
+              >
+                <Settings className="w-3.5 h-3.5 text-purple-400" />
+                <span>SEO 설정</span>
+              </button>
+
+              <button
+                onClick={() => setShowDevicePreviewModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-bold transition-all border border-neutral-700 cursor-pointer"
+              >
+                <Maximize className="w-3.5 h-3.5 text-sky-400" />
+                <span>시뮬레이터</span>
+              </button>
+
+              <button
+                onClick={() => setShowTranslationModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-bold transition-all border border-neutral-700 cursor-pointer"
+              >
+                <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                <span>다국어</span>
+              </button>
+
+              <button
+                onClick={() => setShowLogModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-bold transition-all border border-neutral-700 cursor-pointer"
+              >
+                <Move className="w-3.5 h-3.5 text-amber-400" />
+                <span>작업 로그</span>
+              </button>
+
+              <button
+                onClick={() => setShowBackupModal(true)}
+                className="flex items-center justify-center space-x-1.5 p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer col-span-2 sm:col-span-1"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>백업 / 복구</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Collapsible Analytics & Low Stock Summary */}
+          {showStatsWidget && (
+            <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm space-y-4 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
+                <span className="font-extrabold text-xs text-neutral-800 flex items-center space-x-2">
+                  <BarChart3 className="w-4 h-4 text-amber-600" />
+                  <span>실시간 데이터 스토어 분석 & 재고 상태</span>
+                </span>
+                <button 
+                  onClick={() => setShowStatsWidget(false)}
+                  className="text-xs text-neutral-400 hover:text-neutral-700 font-bold cursor-pointer"
+                >
+                  [접기 ▲]
+                </button>
+              </div>
+              <AdminAnalyticsWidget />
+              <LowStockWidget />
+            </div>
+          )}
 
           {optimizationLogs && (
             <div className="mb-8 p-6 border-2 border-accent bg-[#F9F9F9] text-black rounded-none space-y-1 focus-within:outline-none animate-in fade-in duration-300">
@@ -883,7 +989,7 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                     />
 
                     {/* Stock & Badge Options */}
-                    <div className="col-span-full grid grid-cols-1 sm:grid-cols-3 gap-4 bg-neutral-50 p-4 border border-neutral-200">
+                    <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-neutral-50 p-4 border border-neutral-200">
                       <div>
                         <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 block mb-2">재고 및 판매 상태</label>
                         <select
@@ -912,11 +1018,33 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                         <button
                           type="button"
                           onClick={() => updateProduct(product.id, { isBestSeller: !product.isBestSeller })}
-                          className={`w-full text-xs font-bold py-2 px-3 border transition-all ${product.isBestSeller ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-neutral-500 border-neutral-300'}`}
+                          className={`w-full text-xs font-bold py-2 px-3 border transition-all ${product.isBestSeller ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-neutral-500 border-neutral-300'}`}
                         >
                           {product.isBestSeller ? '🔥 BEST 뱃지 표시 중' : 'BEST 뱃지 없음'}
                         </button>
                       </div>
+
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 block mb-2">PRE-ORDER 프리오더</label>
+                        <button
+                          type="button"
+                          onClick={() => updateProduct(product.id, { isPreorder: !product.isPreorder })}
+                          className={`w-full text-xs font-bold py-2 px-3 border transition-all ${product.isPreorder ? 'bg-amber-500 text-black border-amber-500 font-extrabold' : 'bg-white text-neutral-500 border-neutral-300'}`}
+                        >
+                          {product.isPreorder ? '⚡ PRE-ORDER 표시 중' : '프리오더 없음'}
+                        </button>
+                      </div>
+
+                      {product.isPreorder && (
+                        <div className="col-span-full pt-2 border-t border-neutral-200">
+                          <EditableField 
+                            label="Pre-Order Delivery Schedule (프리오더 발송 예정일)" 
+                            value={product.preorderDeliveryDate || ''} 
+                            onSave={(val) => updateProduct(product.id, { preorderDeliveryDate: val })} 
+                            description="예: 2026-08-25 또는 8월 하순 순차 발송"
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="col-span-2 flex items-end justify-between">
                       <EditableField 
@@ -988,7 +1116,31 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12 border-2 border-black p-8 bg-paper/30">
                       <div className="space-y-8">
-                        <EditableField label="Logo Text" value={settings.logoText} onSave={(val) => wrapUpdateSettings({ logoText: val })} />
+                        <EditableField label="Store Logo Name (가게 상호명)" value={settings.logoText} onSave={(val) => wrapUpdateSettings({ logoText: val })} />
+                        
+                        {/* Store Logo Image URL */}
+                        <div className="space-y-2 p-4 bg-white border border-neutral-200 rounded-xl">
+                          <label className="text-[10px] uppercase tracking-[0.2em] font-black text-neutral-800 block">
+                            Store Logo Image URL (상단바 좌측 가게 로고 이미지)
+                          </label>
+                          <p className="text-[9px] text-neutral-500 font-mono">
+                            상단바 좌측에 투명 PNG/SVG 로고 이미지를 표시합니다.
+                          </p>
+                          <input
+                            type="text"
+                            placeholder="https://example.com/logo.png"
+                            value={settings.logoImage || ''}
+                            onChange={(e) => wrapUpdateSettings({ logoImage: e.target.value })}
+                            className="w-full p-2.5 text-xs font-mono bg-neutral-50 border border-neutral-300 rounded-lg"
+                          />
+                          {settings.logoImage && (
+                            <div className="mt-2 p-3 bg-neutral-900 rounded-lg flex items-center justify-between">
+                              <span className="text-[9px] font-mono text-neutral-400">로고 미리보기:</span>
+                              <img src={settings.logoImage} alt="Logo Preview" className="h-8 w-auto object-contain" />
+                            </div>
+                          )}
+                        </div>
+
                         <TypographyEditor label="Logo" settings={settings.logoStyle} onSave={(val) => wrapUpdateSettings({ logoStyle: val })} />
                       </div>
                       <div className="space-y-8">

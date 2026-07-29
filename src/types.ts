@@ -27,6 +27,7 @@ export interface LayoutSettings {
 
 export interface SiteSettings {
   logoText: string;
+  logoImage?: string;
   footerDescription: string;
   primaryColor: string;
   accentColor: string;
@@ -174,6 +175,8 @@ export interface Product {
   stockCount?: number;
   isNewProduct?: boolean;
   isBestSeller?: boolean;
+  isPreorder?: boolean;
+  preorderDeliveryDate?: string;
   views?: number;
 }
 
@@ -216,4 +219,25 @@ export interface SectionContent {
   sectionId: string;
   title: string;
   description: string;
+}
+
+export interface AiFaq {
+  id: string;
+  question: string;
+  answer: string;
+  keywords?: string;
+}
+
+export interface QnaInquiry {
+  id: string;
+  userName: string;
+  contact: string;
+  title: string;
+  content: string;
+  password?: string;
+  isSecret?: boolean;
+  createdAt: string;
+  status: 'PENDING' | 'ANSWERED';
+  adminAnswer?: string;
+  answeredAt?: string;
 }

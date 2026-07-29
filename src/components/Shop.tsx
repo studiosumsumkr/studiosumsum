@@ -27,7 +27,7 @@ export const Shop = ({
 }) => {
   const { products, settings, currency, wishlist, toggleWishlist, compareList, toggleCompare, addRecentlyViewed } = useCMS();
   const [filter, setFilter] = useState('ALL');
-  const [quickFilter, setQuickFilter] = useState<'all' | 'new' | 'best' | 'instock'>('all');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'new' | 'best' | 'preorder' | 'instock'>('all');
   const [sortBy, setSortBy] = useState('DEFAULT');
   const [gridCols, setGridCols] = useState<2 | 3 | 4>(3);
   
@@ -37,6 +37,7 @@ export const Shop = ({
     let matchesFeature = true;
     if (quickFilter === 'new') matchesFeature = p.isNewProduct === true;
     else if (quickFilter === 'best') matchesFeature = p.isBestSeller === true;
+    else if (quickFilter === 'preorder') matchesFeature = p.isPreorder === true;
     else if (quickFilter === 'instock') matchesFeature = p.inStock !== false;
 
     const cleanSearch = searchQuery.toLowerCase().replace(/\s/g, '');

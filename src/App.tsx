@@ -97,7 +97,6 @@ import { ProductCompareDrawer } from './components/ProductCompareDrawer';
 import { RecentlyViewedBar } from './components/RecentlyViewedBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NetworkStatusIndicator } from './components/NetworkStatusIndicator';
-import { PromoAnnouncementBar } from './components/PromoAnnouncementBar';
 import { SearchModal } from './components/SearchModal';
 import { LiveSocialProofToast } from './components/LiveSocialProofToast';
 import { ScrollToTop } from './components/ScrollToTop';
@@ -106,6 +105,7 @@ import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { ShippingTrackerModal } from './components/ShippingTrackerModal';
 import { GiftFinderModal } from './components/GiftFinderModal';
 import { CouponModal } from './components/CouponModal';
+import { AiConciergeWidget } from './components/AiConciergeWidget';
 import { Product } from './types';
 
 const ScrollToHash = () => {
@@ -139,6 +139,7 @@ function AppContent() {
   const [isShippingTrackerOpen, setIsShippingTrackerOpen] = useState(false);
   const [isGiftFinderOpen, setIsGiftFinderOpen] = useState(false);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [isAiOpen, setIsAiOpen] = useState(false);
 
   const { settings, loading } = useCMS();
   const location = useLocation();
@@ -169,7 +170,6 @@ function AppContent() {
   return (
     <div className={`relative min-h-screen bg-[#FFFFFF] text-neutral-900 selection:bg-neutral-100 font-set-${settings?.fontSet || 'round'}`}>
       <NetworkStatusIndicator />
-      <PromoAnnouncementBar onOpenCouponModal={() => setIsCouponModalOpen(true)} />
 
       {loading && !settings && (
         <div className="fixed inset-0 z-[100] bg-[#FFFFFF] flex items-center justify-center">
@@ -192,6 +192,7 @@ function AppContent() {
         onWishlistClick={() => setIsWishlistOpen(true)}
         onCompareClick={() => setIsCompareOpen(true)}
         onCouponClick={() => setIsCouponModalOpen(true)}
+        onAiClick={() => setIsAiOpen(!isAiOpen)}
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
       />
@@ -199,6 +200,11 @@ function AppContent() {
       <ScrollToHash />
 
       {/* Global Interactive Tools */}
+      <AiConciergeWidget
+        onProductClick={setSelectedProduct}
+        isOpenExternal={isAiOpen}
+        onCloseExternal={() => setIsAiOpen(false)}
+      />
       <SearchModal
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}

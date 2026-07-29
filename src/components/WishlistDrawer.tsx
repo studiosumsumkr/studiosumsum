@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Heart, ExternalLink, Trash2, ShoppingBag } from 'lucide-react';
 import { useCMS } from '../cms';
 import { Product } from '../types';
+import { formatPrice } from '../utils/currency';
 
 interface WishlistDrawerProps {
   isOpen: boolean;
@@ -11,7 +12,7 @@ interface WishlistDrawerProps {
 }
 
 export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({ isOpen, onClose, onProductClick }) => {
-  const { wishlist, products, toggleWishlist } = useCMS();
+  const { wishlist, products, toggleWishlist, currency } = useCMS();
 
   const wishlistedProducts = products.filter(p => wishlist.includes(p.id));
 
@@ -97,7 +98,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({ isOpen, onClose,
                           {p.name}
                         </h4>
                         <p className="text-[11px] font-mono font-extrabold text-neutral-900">
-                          ${p.price}
+                          {formatPrice(p.price, currency)}
                         </p>
                       </div>
 

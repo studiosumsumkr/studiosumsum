@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Banner, SiteSettings, SectionContent, Product, ProductReview, StockAlert, CouponClaim, ActivityLog } from './types';
+import { Banner, SiteSettings, SectionContent, Product, ProductReview, StockAlert, CouponClaim, ActivityLog, AiFaq, QnaInquiry } from './types';
 import { db, doc, setDoc, onSnapshot } from './lib/firebase';
 
 const STORAGE_KEY = 'studio_sumsum_v6_cool_props_data';
@@ -20,6 +20,8 @@ interface CMSData {
   stockAlerts?: StockAlert[];
   couponClaims?: CouponClaim[];
   activityLogs?: ActivityLog[];
+  aiFaqs?: AiFaq[];
+  inquiries?: QnaInquiry[];
   updatedAt?: number;
 }
 
@@ -44,6 +46,7 @@ const DEFAULT_DATA: CMSData = {
   ],
   settings: {
     logoText: "STUDIO SUMSUM",
+    logoImage: "",
     footerDescription: "STUDIO SUMSUM은 감각적인 현대인의 일상과 예술적 경계를 허물며 공간에 잔잔한 여운을 채워 넣는 핸드메이드 디자인 홈오브제 및 라이프스타일 소품 셀렉트숍입니다.",
     primaryColor: "#111111",
     accentColor: "#1A1A1A",
@@ -161,7 +164,8 @@ const DEFAULT_DATA: CMSData = {
       imageUrl: 'https://images.unsplash.com/photo-1606744824163-985d376605aa?auto=format&fit=crop&q=80&w=1000',
       category: 'SCENTS',
       description: '부드러운 천연 점토의 수공예적 결이 살아있는 세라믹 홀더. 타오르는 연기와 멋스런 조화를 이루어 데스크 공간에 평온함을 더합니다.',
-      link: '#'
+      link: '#',
+      isBestSeller: true
     },
     {
       id: '2',
@@ -170,7 +174,8 @@ const DEFAULT_DATA: CMSData = {
       imageUrl: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=1000',
       category: 'OBJECTS',
       description: '천연석 본연의 정취 가득한 트라버틴 석재 트레이. 일상 소품, 주얼리 홀더 및 영감의 데스크탑 오브제로 아름답게 배치됩니다.',
-      link: '#'
+      link: '#',
+      isNewProduct: true
     },
     {
       id: '3',
@@ -179,11 +184,33 @@ const DEFAULT_DATA: CMSData = {
       imageUrl: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&q=80&w=1000',
       category: 'SCENTS',
       description: '천연 에센셜 오일과 소이 왁스를 입힌 비정형 수제 오브제 캔들. 태우지 않을 때도 일상의 포근한 향과 무드를 완성합니다.',
-      link: '#'
+      link: '#',
+      isPreorder: true,
+      preorderDeliveryDate: '2026-08-25'
+    },
+    {
+      id: '4',
+      name: 'Artisan Cashmere Knit Throw [PRE-ORDER]',
+      price: 180,
+      imageUrl: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=1000',
+      category: 'FURNITURE',
+      description: '장인이 100% 한땀 한땀 수작업으로 제작하는 최고급 캐시미어 블랭킷 니트. 한정 수량 예약 판매.',
+      link: '#',
+      isPreorder: true,
+      preorderDeliveryDate: '2026-08-30',
+      isBestSeller: true
     }
   ],
   cart: [],
-  wishlist: []
+  wishlist: [],
+  aiFaqs: [
+    { id: '1', question: '배송 기간 및 배송비는 어떻게 되나요?', answer: '모든 상품은 주문 결제 후 1~2일 이내 시그니처 전용 박스 및 에어 완충재로 안전하게 출고됩니다. 기본 배송비는 3,000원이며, 10만원 이상 구매 시 무료 배송됩니다.', keywords: '배송,배송비,택배,출고,배송기간' },
+    { id: '2', question: '교환 및 반품 절차가 궁금합니다.', answer: '상품 수령 후 7일 이내 고객센터 또는 1:1 Q&A 문의를 통해 신청 가능합니다. 수공예 오브제 특성상 개봉 및 사용 후에는 단순 변심 반품이 어려울 수 있습니다.', keywords: '교환,반품,환불,취소' },
+    { id: '3', question: '프리오더(사전 예약) 상품 배송은 언제인가요?', answer: '프리오더 상품은 작가의 장인 수공예 오더 공정에 따라 제작되며, 각 상품 상세페이지에 명시된 출고 예정일에 순차 발송됩니다.', keywords: '프리오더,사전예약,예약,배송일' },
+    { id: '4', question: '세라믹 오브제 세척 및 관리 방법', answer: '세라믹 소품 및 인센스 홀더는 미온수와 부드러운 천으로 가볍게 닦아주시기 바랍니다. 강한 충격이나 식기세척기 사용은 피해주세요.', keywords: '관리,세척,세라믹,인센스,홀더' },
+    { id: '5', question: '오프라인 매장 위치 및 운영 시간', answer: 'STUDIO SUMSUM 쇼룸은 서울 성수동 플래그십 스토어에서 만나보실 수 있습니다. (운영시간: 화~일 12:00 ~ 20:00, 월요일 휴무)', keywords: '매장,오프라인,쇼룸,성수동,위치,운영시간' }
+  ],
+  inquiries: []
 };
 
 export const useCMS = () => {
@@ -215,6 +242,11 @@ export const useCMS = () => {
   const isRemoteUpdatingRef = useRef(false);
   const quotaExceededRef = useRef(false);
   const localLastEditTimeRef = useRef<number>(data.updatedAt || Date.now());
+  const dataRef = useRef(data);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   // Firestore Real-time Sync with strict Timestamp Lock
   useEffect(() => {
@@ -339,7 +371,7 @@ export const useCMS = () => {
 
     setSyncStatus('saving');
     const syncTimer = setTimeout(() => {
-      pushToFirestore(data);
+      pushToFirestore(dataRef.current);
     }, 400);
 
     return () => clearTimeout(syncTimer);
@@ -557,6 +589,68 @@ export const useCMS = () => {
     }));
   };
 
+  const addAiFaq = (question: string, answer: string, keywords?: string) => {
+    const newFaq: AiFaq = {
+      id: Date.now().toString(),
+      question,
+      answer,
+      keywords
+    };
+    setData(prev => ({
+      ...prev,
+      aiFaqs: [newFaq, ...(prev.aiFaqs || [])]
+    }));
+    logActivity('AI FAQ 추가', `질문: ${question}`);
+  };
+
+  const updateAiFaq = (id: string, question: string, answer: string, keywords?: string) => {
+    setData(prev => ({
+      ...prev,
+      aiFaqs: (prev.aiFaqs || []).map(f => f.id === id ? { ...f, question, answer, keywords } : f)
+    }));
+  };
+
+  const deleteAiFaq = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      aiFaqs: (prev.aiFaqs || []).filter(f => f.id !== id)
+    }));
+  };
+
+  const addInquiry = (inquiry: Omit<QnaInquiry, 'id' | 'createdAt' | 'status'>) => {
+    const newInquiry: QnaInquiry = {
+      ...inquiry,
+      id: Date.now().toString(),
+      createdAt: new Date().toLocaleString('ko-KR'),
+      status: 'PENDING'
+    };
+    setData(prev => ({
+      ...prev,
+      inquiries: [newInquiry, ...(prev.inquiries || [])]
+    }));
+    logActivity('1:1 Q&A 작성', `작성자: ${inquiry.userName} / 제목: ${inquiry.title}`);
+  };
+
+  const deleteInquiry = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      inquiries: (prev.inquiries || []).filter(i => i.id !== id)
+    }));
+  };
+
+  const answerInquiry = (id: string, adminAnswer: string) => {
+    setData(prev => ({
+      ...prev,
+      inquiries: (prev.inquiries || []).map(i => i.id === id ? {
+        ...i,
+        status: 'ANSWERED',
+        adminAnswer,
+        answeredAt: new Date().toLocaleString('ko-KR')
+      } : i)
+    }));
+    logActivity('1:1 Q&A 답변', `문의 ID: ${id}`);
+  };
+
   const logActivity = (action: string, details: string) => {
     const newLog: ActivityLog = {
       id: Date.now().toString(),
@@ -608,11 +702,14 @@ export const useCMS = () => {
   };
 
   const forcePublishToCloud = async () => {
+    const now = Date.now();
+    localLastEditTimeRef.current = now;
     const currentData = {
-      ...data,
-      updatedAt: Date.now()
+      ...dataRef.current,
+      updatedAt: now
     };
     setData(currentData);
+    setSyncStatus('saving');
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
       const docRef = doc(db, FIRESTORE_DOC_PATH[0], FIRESTORE_DOC_PATH[1]);
@@ -624,9 +721,13 @@ export const useCMS = () => {
       }
 
       await setDoc(docRef, cmsPayload);
+      setSyncStatus('saved');
+      setSyncErrorMessage(null);
       alert("✅ 현재 화면의 최신 데이터가 클라우드 DB(Firebase)에 성공적으로 퍼블리시 되었습니다!\n이제 Vercel 및 외부 접속자, 모든 모바일/PC 기기에서 동일하게 반영됩니다.");
     } catch (e: any) {
       console.error("Error publishing to cloud:", e);
+      setSyncStatus('error');
+      setSyncErrorMessage(e?.message || '클라우드 동기화 실패');
       alert(`❌ 클라우드 동기화 실패: ${e?.message || '알 수 없는 오류'}\n(이미지 파일 크기가 너무 큰 경우일 수 있습니다. 이미지를 더 작게 압축해 주세요.)`);
     }
   };
@@ -685,6 +786,8 @@ export const useCMS = () => {
     stockAlerts: data.stockAlerts || [],
     couponClaims: data.couponClaims || [],
     activityLogs: data.activityLogs || [],
+    aiFaqs: data.aiFaqs || DEFAULT_DATA.aiFaqs || [],
+    inquiries: data.inquiries || [],
     loading,
     dbConnected,
     storageError,
@@ -712,6 +815,12 @@ export const useCMS = () => {
     addCouponClaim,
     deleteCouponClaim,
     updateCouponClaimStatus,
+    addAiFaq,
+    updateAiFaq,
+    deleteAiFaq,
+    addInquiry,
+    deleteInquiry,
+    answerInquiry,
     logActivity,
     duplicateProduct,
     bulkUpdateProducts,

@@ -1,12 +1,12 @@
 import React from 'react';
-import { SlidersHorizontal, Sparkles, Flame, CheckCircle } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, Flame, CheckCircle, Clock } from 'lucide-react';
 
 interface CategoryQuickFilterProps {
   categories: string[];
   selectedCategory: string;
   onSelectCategory: (cat: string) => void;
-  selectedFilter: 'all' | 'new' | 'best' | 'instock';
-  onSelectFilter: (filter: 'all' | 'new' | 'best' | 'instock') => void;
+  selectedFilter: 'all' | 'new' | 'best' | 'preorder' | 'instock';
+  onSelectFilter: (filter: 'all' | 'new' | 'best' | 'preorder' | 'instock') => void;
 }
 
 export const CategoryQuickFilter: React.FC<CategoryQuickFilterProps> = ({
@@ -82,6 +82,18 @@ export const CategoryQuickFilter: React.FC<CategoryQuickFilterProps> = ({
           >
             <Flame className="w-3 h-3" />
             <span>베스트셀러</span>
+          </button>
+
+          <button
+            onClick={() => onSelectFilter('preorder')}
+            className={`px-2.5 py-1 font-bold uppercase border transition-all cursor-pointer flex items-center space-x-1 ${
+              selectedFilter === 'preorder'
+                ? 'bg-amber-500 text-black font-extrabold border-amber-500'
+                : 'bg-white dark:bg-neutral-900 text-amber-700 dark:text-amber-400 border-neutral-200 dark:border-neutral-800'
+            }`}
+          >
+            <Clock className="w-3 h-3" />
+            <span>프리오더</span>
           </button>
 
           <button

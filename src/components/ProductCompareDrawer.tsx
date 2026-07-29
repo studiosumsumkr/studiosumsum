@@ -144,6 +144,11 @@ export const ProductCompareDrawer: React.FC<ProductCompareDrawerProps> = ({
                             <span>베스트셀러:</span>
                             <span className="font-bold">{p.isBestSeller ? 'YES' : 'NO'}</span>
                           </div>
+
+                          <div className="flex justify-between items-center text-neutral-600 dark:text-neutral-400">
+                            <span>프리오더:</span>
+                            <span className="font-bold text-amber-500">{p.isPreorder ? `YES (${p.preorderDeliveryDate || '순차발송'})` : 'NO'}</span>
+                          </div>
                         </div>
 
                         <p className="text-[10px] text-neutral-500 line-clamp-3 leading-relaxed pt-2">

@@ -15,15 +15,32 @@ export const LiveSocialProofToast: React.FC<LiveSocialProofToastProps> = ({ onPr
   const [city, setCity] = useState('서울 강남구');
   const [visible, setVisible] = useState(false);
 
-  const cities = ['서울 강남구', '부산 해운대구', '인천 송도', '대구 수성구', '제주 서귀포시', '경기 성남시'];
+  const cities = [
+    '서울 강남구', '서울 용산구', '서울 성수동', '서울 마포구', '서울 종로구',
+    '서울 송파구', '서울 서초구', '서울 영등포구', '부산 해운대구', '부산 수영구 광안동',
+    '부산 남구', '인천 송도국제도시', '인천 청라동', '대구 수성구 범어동', '대구 중구',
+    '대전 유성구 상대동', '대전 서구 둔산동', '광주 서구 치평동', '광주 남구 봉선동',
+    '울산 남구 삼산동', '경기 성남시 판교', '경기 수원시 영통구', '경기 고양시 일산동구',
+    '경기 용인시 수지구', '경기 하남시 미사동', '세종특별자치시 보람동', '강원 강릉시 교동',
+    '강원 속초시', '전북 전주시 완산구', '전남 여수시 학동', '경북 포항시 남구',
+    '경남 창원시 성산구', '제주 서귀포시 중문', '제주시 노형동'
+  ];
+
+  const lastCityRef = React.useRef<string>('');
 
   useEffect(() => {
     if (products.length === 0) return;
 
-    // Show every 18 seconds
-    const interval = setInterval(() => {
+    // Show every 16-22 seconds with varied cities
+    const triggerNext = () => {
       const randomProd = products[Math.floor(Math.random() * products.length)];
-      const randomCity = cities[Math.floor(Math.random() * cities.length)];
+      
+      let randomCity = cities[Math.floor(Math.random() * cities.length)];
+      while (randomCity === lastCityRef.current && cities.length > 1) {
+        randomCity = cities[Math.floor(Math.random() * cities.length)];
+      }
+      lastCityRef.current = randomCity;
+
       const randomAction = Math.random() > 0.4 ? 'purchased' : 'viewed';
 
       setCurrentProduct(randomProd);
@@ -31,11 +48,17 @@ export const LiveSocialProofToast: React.FC<LiveSocialProofToastProps> = ({ onPr
       setActionType(randomAction);
       setVisible(true);
 
-      // Hide after 5 seconds
-      setTimeout(() => setVisible(false), 5000);
-    }, 18000);
+      setTimeout(() => setVisible(false), 5500);
+    };
 
-    return () => clearInterval(interval);
+    // First trigger quickly after 4s
+    const initialTimeout = setTimeout(triggerNext, 4000);
+    const interval = setInterval(triggerNext, 20000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
   }, [products]);
 
   if (!currentProduct || !visible) return null;

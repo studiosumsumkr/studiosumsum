@@ -21,13 +21,15 @@ import {
   Search,
   ArrowUpDown,
   History,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 import { getTypographyStyle, getLayoutSpacing } from '../utils';
+import { formatPrice } from '../utils/currency';
 import { Product } from '../types';
 
 export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void }) => {
-  const { settings, banners, products } = useCMS();
+  const { settings, banners, products, currency } = useCMS();
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'recommended' | 'price-asc' | 'price-desc' | 'newest'>('recommended');
@@ -76,14 +78,20 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
     products.forEach(p => {
       if (p.category) cats.add(p.category.toUpperCase());
     });
-    return ['ALL', ...Array.from(cats)];
+    return ['ALL', 'BEST', 'NEW', 'PRE-ORDER', ...Array.from(cats)];
   }, [products]);
 
   // Filter & Sort products
   const filteredProducts = useMemo(() => {
     let result = products;
 
-    if (activeCategory !== 'ALL') {
+    if (activeCategory === 'BEST') {
+      result = result.filter(p => p.isBestSeller);
+    } else if (activeCategory === 'NEW') {
+      result = result.filter(p => p.isNewProduct);
+    } else if (activeCategory === 'PRE-ORDER') {
+      result = result.filter(p => p.isPreorder);
+    } else if (activeCategory !== 'ALL') {
       result = result.filter(p => p.category?.toUpperCase() === activeCategory);
     }
 
@@ -269,13 +277,19 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
                         {product.category}
                       </span>
                     )}
+                    {product.isPreorder && (
+                      <span className="bg-amber-500 text-black text-[8px] font-mono font-extrabold uppercase tracking-widest px-2 py-0.5 flex items-center space-x-1 shadow-md">
+                        <Clock className="w-2.5 h-2.5" />
+                        <span>PRE-ORDER ({product.preorderDeliveryDate || '순차발송'})</span>
+                      </span>
+                    )}
                     {product.isNewProduct && (
                       <span className="bg-emerald-600 text-white text-[8px] font-mono uppercase font-bold tracking-widest px-2 py-0.5">
                         NEW
                       </span>
                     )}
                     {product.isBestSeller && (
-                      <span className="bg-amber-500 text-white text-[8px] font-mono uppercase font-bold tracking-widest px-2 py-0.5">
+                      <span className="bg-amber-600 text-white text-[8px] font-mono uppercase font-bold tracking-widest px-2 py-0.5">
                         BEST
                       </span>
                     )}
@@ -295,10 +309,14 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
                     <div className="absolute inset-x-3 bottom-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 flex gap-2 z-10">
                       <button
                         onClick={(e) => handleBuyNow(e, product)}
-                        className="flex-1 bg-[#111111] text-[#FFFFFF] hover:bg-[#333333] text-[9px] font-display font-bold uppercase tracking-[0.2em] py-2.5 px-3 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+                        className={`flex-1 text-[9px] font-display font-bold uppercase tracking-[0.2em] py-2.5 px-3 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer ${
+                          product.isPreorder
+                            ? 'bg-amber-500 text-black hover:bg-amber-400 font-extrabold'
+                            : 'bg-[#111111] text-[#FFFFFF] hover:bg-[#333333]'
+                        }`}
                       >
                         <ExternalLink className="w-3 h-3" />
-                        <span>BUY NOW (구매하기)</span>
+                        <span>{product.isPreorder ? 'PRE-ORDER NOW' : 'BUY NOW (구매)'}</span>
                       </button>
                       <button
                         onClick={() => handleProductSelect(product)}
@@ -327,7 +345,7 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
 
                   <div className="flex items-center justify-between pt-2 border-t border-[#E5E5E5]/60">
                     <span className="text-sm font-display font-extrabold text-[#111111] tracking-wider">
-                      ${product.price} <span className="text-[10px] text-neutral-400 font-normal">USD</span>
+                      {formatPrice(product.price, currency)}
                     </span>
                     <button
                       onClick={() => handleProductSelect(product)}
@@ -557,7 +575,7 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
                       />
                       <div className="absolute inset-x-0 bottom-0 bg-black/80 text-white text-[8px] font-bold p-0.5 truncate text-center">
-                        ${p.price}
+                        {formatPrice(p.price, currency)}
                       </div>
                     </button>
                   ))}

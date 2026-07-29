@@ -164,10 +164,10 @@ export const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose }) => 
 
                 <div className="space-y-1">
                   <h3 className="text-xl font-bold font-display uppercase text-[#111111]">
-                    쿠폰 발급 완료!
+                    신청이 완료되었습니다!
                   </h3>
-                  <p className="text-xs text-neutral-600 font-mono">
-                    [{phoneNumber}] 님께 쿠폰 코드가 할당되었습니다.
+                  <p className="text-xs text-neutral-800 font-bold font-mono">
+                    [{phoneNumber}] 님, 확인 후 곧 연락드리겠습니다.
                   </p>
                 </div>
 

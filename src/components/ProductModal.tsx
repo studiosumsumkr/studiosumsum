@@ -136,13 +136,25 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
             <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col overflow-y-auto bg-[#FFFFFF] dark:bg-neutral-900 text-neutral-900 dark:text-white">
               <div className="flex-1">
                 <div className="mb-8">
-                  <p className="text-[10px] uppercase tracking-[0.12em] font-bold text-[#777777] font-display mb-2">CATEGORY: {product.category}</p>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <p className="text-[10px] uppercase tracking-[0.12em] font-bold text-[#777777] font-display">CATEGORY: {product.category}</p>
+                    {product.isPreorder && (
+                      <span className="bg-amber-600 text-white text-[9px] font-mono font-extrabold uppercase tracking-widest px-2 py-0.5 rounded">
+                        PRE-ORDER ({product.preorderDeliveryDate || '순차발송'})
+                      </span>
+                    )}
+                  </div>
                   <h2 className="text-3xl md:text-5xl font-display font-extrabold tracking-[0.12em] uppercase leading-none mb-4 text-[#222222] dark:text-white">
                     {product.name}
                   </h2>
                   <p className="text-2xl font-mono font-extrabold text-[#111111] dark:text-white">
                     {formatPrice(product.price, currency)}
                   </p>
+                  {product.isPreorder && (
+                    <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded text-xs text-amber-800 dark:text-amber-300 font-sans">
+                      ⚡ <strong>프리오더 안내:</strong> 본 상품은 사전 예약 제작 상품입니다. 예상 발송 예정일은 <strong>{product.preorderDeliveryDate || '상세안내 참조'}</strong> 입니다.
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-8 mb-8">
@@ -183,7 +195,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
               </div>
 
               <div className="space-y-3 pt-6 border-t border-[#E5E5E5] dark:border-neutral-800">
-                {/* Action Buttons: Wishlist & Compare & QR & Share */}
+                {/* Action Buttons: Wishlist & Compare & QR */}
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => toggleWishlist(product.id)}
@@ -227,9 +239,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                     href={formatUrl(buyLink)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-4 transition-all text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-3 bg-[#111111] text-[#FFFFFF] dark:bg-white dark:text-black border border-[#111111] cursor-pointer"
+                    className={`w-full py-4 transition-all text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-3 cursor-pointer ${
+                      product.isPreorder
+                        ? 'bg-amber-500 text-black border border-amber-500 hover:bg-amber-400 font-extrabold'
+                        : 'bg-[#111111] text-[#FFFFFF] dark:bg-white dark:text-black border border-[#111111]'
+                    }`}
                   >
-                    <span>BUY NOW (구매하기)</span>
+                    <span>{product.isPreorder ? 'PRE-ORDER NOW (프리오더 예약 구매)' : 'BUY NOW (구매하기)'}</span>
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 ) : (
@@ -237,9 +253,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                     onClick={() => {
                       alert("등록된 구매 링크가 없습니다. 어드민 관리자 페이지에서 상품 구매 링크(URL)를 설정하실 수 있습니다.");
                     }}
-                    className="w-full py-4 transition-all text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-3 bg-[#111111] text-[#FFFFFF] dark:bg-white dark:text-black border border-[#111111] cursor-pointer"
+                    className={`w-full py-4 transition-all text-[11px] font-bold uppercase tracking-[0.2em] font-display flex items-center justify-center space-x-3 cursor-pointer ${
+                      product.isPreorder
+                        ? 'bg-amber-500 text-black border border-amber-500 hover:bg-amber-400 font-extrabold'
+                        : 'bg-[#111111] text-[#FFFFFF] dark:bg-white dark:text-black border border-[#111111]'
+                    }`}
                   >
-                    <span>BUY NOW (구매하기)</span>
+                    <span>{product.isPreorder ? 'PRE-ORDER NOW (프리오더 예약 구매)' : 'BUY NOW (구매하기)'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 )}

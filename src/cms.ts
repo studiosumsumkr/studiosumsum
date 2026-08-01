@@ -412,10 +412,16 @@ export const useCMS = () => {
     localLastEditTimeRef.current = now;
     setData(prev => {
       const updated = updater(prev);
-      return {
+      const next = {
         ...updated,
         updatedAt: now
       };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch (e) {
+        console.warn("LocalStorage save warning:", e);
+      }
+      return next;
     });
   };
 
@@ -473,26 +479,26 @@ export const useCMS = () => {
   const addToCart = (productId: string) => {
     setData(prev => {
       const existing = prev.cart.find(item => item.productId === productId);
+      let updatedCart;
       if (existing) {
-        return {
-          ...prev,
-          cart: prev.cart.map(item => 
-            item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item
-          )
-        };
+        updatedCart = prev.cart.map(item => 
+          item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      } else {
+        updatedCart = [...prev.cart, { productId, quantity: 1 }];
       }
-      return {
-        ...prev,
-        cart: [...prev.cart, { productId, quantity: 1 }]
-      };
+      const next = { ...prev, cart: updatedCart };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
     });
   };
 
   const removeFromCart = (productId: string) => {
-    setData(prev => ({
-      ...prev,
-      cart: prev.cart.filter(item => item.productId !== productId)
-    }));
+    setData(prev => {
+      const next = { ...prev, cart: prev.cart.filter(item => item.productId !== productId) };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
   };
 
   const updateCartQuantity = (productId: string, quantity: number) => {
@@ -500,31 +506,35 @@ export const useCMS = () => {
       removeFromCart(productId);
       return;
     }
-    setData(prev => ({
-      ...prev,
-      cart: prev.cart.map(item => 
-        item.productId === productId ? { ...item, quantity } : item
-      )
-    }));
+    setData(prev => {
+      const next = {
+        ...prev,
+        cart: prev.cart.map(item => 
+          item.productId === productId ? { ...item, quantity } : item
+        )
+      };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
   };
 
   const clearCart = () => {
-    setData(prev => ({ ...prev, cart: [] }));
+    setData(prev => {
+      const next = { ...prev, cart: [] };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
   };
 
   const toggleWishlist = (productId: string) => {
     setData(prev => {
       const exists = prev.wishlist.includes(productId);
-      if (exists) {
-        return {
-          ...prev,
-          wishlist: prev.wishlist.filter(id => id !== productId)
-        };
-      }
-      return {
-        ...prev,
-        wishlist: [...prev.wishlist, productId]
-      };
+      const nextWishlist = exists
+        ? prev.wishlist.filter(id => id !== productId)
+        : [...prev.wishlist, productId];
+      const next = { ...prev, wishlist: nextWishlist };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
     });
   };
 
@@ -533,7 +543,9 @@ export const useCMS = () => {
       const current = prev.recentlyViewed || [];
       const filtered = current.filter(id => id !== productId);
       const updated = [productId, ...filtered].slice(0, 10);
-      return { ...prev, recentlyViewed: updated };
+      const next = { ...prev, recentlyViewed: updated };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
     });
   };
 
@@ -541,26 +553,42 @@ export const useCMS = () => {
     setData(prev => {
       const current = prev.compareList || [];
       if (current.includes(productId)) {
-        return { ...prev, compareList: current.filter(id => id !== productId) };
+        const next = { ...prev, compareList: current.filter(id => id !== productId) };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+        return next;
       }
       if (current.length >= 4) {
         alert("비교함에는 최대 4개의 상품만 담을 수 있습니다.");
         return prev;
       }
-      return { ...prev, compareList: [...current, productId] };
+      const next = { ...prev, compareList: [...current, productId] };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
     });
   };
 
   const clearCompare = () => {
-    setData(prev => ({ ...prev, compareList: [] }));
+    setData(prev => {
+      const next = { ...prev, compareList: [] };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
   };
 
   const setCurrency = (curr: 'USD' | 'KRW' | 'EUR' | 'JPY') => {
-    setData(prev => ({ ...prev, currency: curr }));
+    setData(prev => {
+      const next = { ...prev, currency: curr };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
   };
 
   const setThemeMode = (mode: 'light' | 'dark' | 'ambient') => {
-    setData(prev => ({ ...prev, themeMode: mode }));
+    setData(prev => {
+      const next = { ...prev, themeMode: mode };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
   };
 
   const addReview = (review: Omit<ProductReview, 'id' | 'createdAt'>) => {
@@ -569,7 +597,7 @@ export const useCMS = () => {
       id: Date.now().toString(),
       createdAt: new Date().toLocaleDateString('ko-KR')
     };
-    setData(prev => {
+    updateDataWithTimestamp(prev => {
       const updated = [newRev, ...(prev.reviews || [])];
       return { ...prev, reviews: updated };
     });
@@ -583,7 +611,7 @@ export const useCMS = () => {
       createdAt: new Date().toLocaleString('ko-KR'),
       notified: false
     };
-    setData(prev => {
+    updateDataWithTimestamp(prev => {
       const updated = [newAlert, ...(prev.stockAlerts || [])];
       return { ...prev, stockAlerts: updated };
     });
@@ -597,7 +625,7 @@ export const useCMS = () => {
       claimedAt: new Date().toLocaleString('ko-KR'),
       status: 'NEW'
     };
-    setData(prev => {
+    updateDataWithTimestamp(prev => {
       const updated = [newClaim, ...(prev.couponClaims || [])];
       return { ...prev, couponClaims: updated };
     });
@@ -605,14 +633,14 @@ export const useCMS = () => {
   };
 
   const deleteCouponClaim = (id: string) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       couponClaims: (prev.couponClaims || []).filter(c => c.id !== id)
     }));
   };
 
   const updateCouponClaimStatus = (id: string, status: 'NEW' | 'CONTACTED' | 'USED') => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       couponClaims: (prev.couponClaims || []).map(c => c.id === id ? { ...c, status } : c)
     }));
@@ -625,7 +653,7 @@ export const useCMS = () => {
       createdAt: new Date().toISOString().slice(0, 10),
       claimCount: 0
     };
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       coupons: [newCoupon, ...(prev.coupons || [])]
     }));
@@ -633,21 +661,21 @@ export const useCMS = () => {
   };
 
   const updateCoupon = (id: string, updates: Partial<Coupon>) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       coupons: (prev.coupons || []).map(c => c.id === id ? { ...c, ...updates } : c)
     }));
   };
 
   const deleteCoupon = (id: string) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       coupons: (prev.coupons || []).filter(c => c.id !== id)
     }));
   };
 
   const updateStockAlertStatus = (id: string, notified: boolean) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       stockAlerts: (prev.stockAlerts || []).map(s => s.id === id ? { ...s, notified } : s)
     }));
@@ -660,7 +688,7 @@ export const useCMS = () => {
       answer,
       keywords
     };
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       aiFaqs: [newFaq, ...(prev.aiFaqs || [])]
     }));
@@ -668,14 +696,14 @@ export const useCMS = () => {
   };
 
   const updateAiFaq = (id: string, question: string, answer: string, keywords?: string) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       aiFaqs: (prev.aiFaqs || []).map(f => f.id === id ? { ...f, question, answer, keywords } : f)
     }));
   };
 
   const deleteAiFaq = (id: string) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       aiFaqs: (prev.aiFaqs || []).filter(f => f.id !== id)
     }));
@@ -688,7 +716,7 @@ export const useCMS = () => {
       createdAt: new Date().toLocaleString('ko-KR'),
       status: 'PENDING'
     };
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       inquiries: [newInquiry, ...(prev.inquiries || [])]
     }));
@@ -696,14 +724,14 @@ export const useCMS = () => {
   };
 
   const deleteInquiry = (id: string) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       inquiries: (prev.inquiries || []).filter(i => i.id !== id)
     }));
   };
 
   const answerInquiry = (id: string, adminAnswer: string) => {
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       inquiries: (prev.inquiries || []).map(i => i.id === id ? {
         ...i,
@@ -722,14 +750,14 @@ export const useCMS = () => {
       details,
       timestamp: new Date().toLocaleTimeString('ko-KR')
     };
-    setData(prev => ({
+    updateDataWithTimestamp(prev => ({
       ...prev,
       activityLogs: [newLog, ...(prev.activityLogs || [])].slice(0, 30)
     }));
   };
 
   const duplicateProduct = (productId: string) => {
-    setData(prev => {
+    updateDataWithTimestamp(prev => {
       const target = prev.products.find(p => p.id === productId);
       if (!target) return prev;
       const copy: Product = {
@@ -743,14 +771,16 @@ export const useCMS = () => {
   };
 
   const bulkUpdateProducts = (updatedProducts: Product[]) => {
-    setData(prev => ({ ...prev, products: updatedProducts }));
+    updateDataWithTimestamp(prev => ({ ...prev, products: updatedProducts }));
     logActivity('일괄 수정', `상품 ${updatedProducts.length}개 일괄 변경`);
   };
 
   const resetToDefaultData = async () => {
+    const now = Date.now();
+    localLastEditTimeRef.current = now;
     const freshData = {
       ...DEFAULT_DATA,
-      updatedAt: Date.now()
+      updatedAt: now
     };
     setData(freshData);
     try {
@@ -819,10 +849,12 @@ export const useCMS = () => {
       if (!incoming || typeof incoming !== 'object') {
         throw new Error('유효하지 않은 백업 데이터 형식입니다.');
       }
+      const now = Date.now();
+      localLastEditTimeRef.current = now;
       const restoredData: CMSData = {
         ...DEFAULT_DATA,
         ...incoming,
-        updatedAt: Date.now()
+        updatedAt: now
       };
       setData(restoredData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(restoredData));

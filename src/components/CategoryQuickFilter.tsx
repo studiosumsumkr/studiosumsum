@@ -1,5 +1,5 @@
 import React from 'react';
-import { SlidersHorizontal, Sparkles, Flame, CheckCircle, Clock } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, Flame, CheckCircle, Clock, Zap } from 'lucide-react';
 
 interface CategoryQuickFilterProps {
   categories: string[];
@@ -7,6 +7,7 @@ interface CategoryQuickFilterProps {
   onSelectCategory: (cat: string) => void;
   selectedFilter: 'all' | 'new' | 'best' | 'preorder' | 'instock';
   onSelectFilter: (filter: 'all' | 'new' | 'best' | 'preorder' | 'instock') => void;
+  onOpenTimeDeal?: () => void;
 }
 
 export const CategoryQuickFilter: React.FC<CategoryQuickFilterProps> = ({
@@ -15,6 +16,7 @@ export const CategoryQuickFilter: React.FC<CategoryQuickFilterProps> = ({
   onSelectCategory,
   selectedFilter,
   onSelectFilter,
+  onOpenTimeDeal,
 }) => {
   return (
     <div className="py-4 border-y border-neutral-200 dark:border-neutral-800 my-6 space-y-3 font-sans">
@@ -107,6 +109,17 @@ export const CategoryQuickFilter: React.FC<CategoryQuickFilterProps> = ({
             <CheckCircle className="w-3 h-3" />
             <span>구매가능만</span>
           </button>
+
+          {onOpenTimeDeal && (
+            <button
+              onClick={onOpenTimeDeal}
+              className="px-2.5 py-1 font-extrabold uppercase border bg-amber-500 text-black border-amber-500 hover:bg-amber-400 transition-all cursor-pointer flex items-center space-x-1 shadow-xs animate-pulse"
+              title="24시간 스페셜 타임딜"
+            >
+              <Zap className="w-3 h-3 text-black fill-black" />
+              <span>⚡ 타임딜</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

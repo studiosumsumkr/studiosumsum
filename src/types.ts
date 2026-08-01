@@ -159,6 +159,21 @@ export interface SiteSettings {
   promoDiscountPercent?: number;
   promoDiscountActive?: boolean;
   couponTitle?: string;
+  bannerLogoImage?: string;
+}
+
+export interface Coupon {
+  id: string;
+  name: string;
+  code: string;
+  discountType: 'PERCENT' | 'FIXED';
+  discountValue: number;
+  minOrderAmount?: number;
+  expiryDate?: string;
+  maxClaims?: number;
+  claimCount?: number;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface Product {

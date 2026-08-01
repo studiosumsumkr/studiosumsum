@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, ShoppingBag, User, Search, Instagram, Twitter, Facebook, Heart, ArrowRightLeft, Ticket, Bot } from 'lucide-react';
+import { Menu, X, ShoppingBag, User, Search, Instagram, Twitter, Facebook, Heart, ArrowRightLeft, Ticket, Bot, Users, Zap } from 'lucide-react';
 import { useCMS } from '../cms';
 import { getTypographyStyle } from '../utils';
 import { CurrencySelector } from './CurrencySelector';
@@ -14,6 +14,7 @@ interface NavbarProps {
   onCompareClick?: () => void;
   onCouponClick?: () => void;
   onAiClick?: () => void;
+  onTimeDealClick?: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
@@ -24,6 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onCompareClick,
   onCouponClick,
   onAiClick,
+  onTimeDealClick,
   searchQuery,
   setSearchQuery
 }) => {
@@ -80,10 +82,24 @@ export const Navbar: React.FC<NavbarProps> = ({
     <div className="fixed top-0 left-0 w-full z-50 pointer-events-none">
       {/* Announcement Bar */}
       {settings?.showAnnouncement && (
-        <div className="bg-neutral-950 text-white py-2.5 px-6 flex justify-center items-center pointer-events-auto border-b border-neutral-900">
-          <Link to={settings.announcementLink || "/shop"} className="text-[10px] md:text-[11px] font-medium uppercase tracking-[0.3em] md:tracking-[0.45em] text-white/90 hover:opacity-80 transition-opacity">
-            {settings.announcementText}
-          </Link>
+        <div className="bg-neutral-950 text-white py-2 px-4 flex justify-between items-center pointer-events-auto border-b border-neutral-900 text-xs font-mono">
+          <div className="max-w-7xl mx-auto w-full flex items-center justify-between px-2 gap-2">
+            <Link to={settings.announcementLink || "/shop"} className="text-[10px] md:text-[11px] font-medium uppercase tracking-[0.2em] md:tracking-[0.3em] text-white/90 hover:opacity-80 transition-opacity truncate">
+              {settings.announcementText}
+            </Link>
+            
+            <div className="flex items-center space-x-2 shrink-0">
+              {onTimeDealClick && (
+                <button
+                  onClick={onTimeDealClick}
+                  className="px-2.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black uppercase rounded tracking-wider flex items-center space-x-1 shadow-sm cursor-pointer transition-all animate-pulse"
+                >
+                  <Zap className="w-3 h-3 fill-black" />
+                  <span>⚡ 24H 타임딜</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -105,7 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <img 
                   src={settings.logoImage} 
                   alt={settings.logoText || "Store Logo"} 
-                  className="h-6 sm:h-8 md:h-9 w-auto object-contain transition-transform group-hover:scale-105"
+                  className="h-7 sm:h-9 md:h-10 w-auto object-contain transition-transform group-hover:scale-105"
                 />
               ) : (
                 <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 bg-neutral-900 text-amber-400 rounded-xl flex items-center justify-center font-black font-display text-xs sm:text-sm tracking-tighter shadow-sm border border-neutral-800 group-hover:bg-black transition-colors shrink-0">
@@ -146,6 +162,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="hidden md:flex items-center space-x-2">
               <CurrencySelector />
             </div>
+
+            {/* Live Time Deal Button */}
+            {onTimeDealClick && (
+              <button
+                onClick={onTimeDealClick}
+                className="hidden sm:flex items-center space-x-1.5 px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black rounded-full font-sans font-black text-xs cursor-pointer shadow-md transition-all ring-2 ring-amber-500/30 animate-pulse"
+                title="24H 스페셜 타임딜"
+              >
+                <Zap className="w-3.5 h-3.5 text-black fill-black" />
+                <span className="tracking-tight">타임딜</span>
+              </button>
+            )}
 
             {/* Pinned AI CS / Q&A Button in Header (On mobile, accessible in drawer and floating widget) */}
             {onAiClick && (
@@ -268,9 +296,26 @@ export const Navbar: React.FC<NavbarProps> = ({
               ))}
             </div>
 
-            {/* Quick Actions (Q&A, Coupon, Wishlist, Compare) */}
+            {/* Quick Actions (Time Deal, Group Buy, Q&A, Coupon) */}
             <div className="space-y-3 mb-8">
               <p className="text-[10px] font-mono uppercase text-neutral-400 font-bold tracking-widest">Quick Actions</p>
+
+              {/* Time Deal Button */}
+              {onTimeDealClick && (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onTimeDealClick();
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-extrabold rounded-xl shadow-md text-sm cursor-pointer animate-pulse"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Zap className="w-5 h-5 text-black fill-black" />
+                    <span>⚡ 24H 한정 타임딜</span>
+                  </div>
+                  <span className="text-[10px] bg-black text-amber-400 px-2 py-0.5 rounded-full font-mono font-black">FLASH SALE</span>
+                </button>
+              )}
               
               {/* AI Q&A Button */}
               {onAiClick && (

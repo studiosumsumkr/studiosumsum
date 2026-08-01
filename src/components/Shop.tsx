@@ -19,11 +19,13 @@ const formatUrl = (url?: string) => {
 
 export const Shop = ({ 
   searchQuery, 
-  onProductClick
+  onProductClick,
+  onOpenTimeDeal
 }: { 
   searchQuery: string, 
   onProductClick: (p: Product) => void, 
-  onAddToCart?: (id: string) => void 
+  onAddToCart?: (id: string) => void,
+  onOpenTimeDeal?: () => void
 }) => {
   const { products, settings, currency, wishlist, toggleWishlist, compareList, toggleCompare, addRecentlyViewed } = useCMS();
   const [filter, setFilter] = useState('ALL');
@@ -119,6 +121,7 @@ export const Shop = ({
             onSelectCategory={setFilter}
             selectedFilter={quickFilter}
             onSelectFilter={setQuickFilter}
+            onOpenTimeDeal={onOpenTimeDeal}
           />
         </header>
 
@@ -134,7 +137,7 @@ export const Shop = ({
             const isCompared = compareList.includes(product.id);
 
             return (
-              <motion.div 
+              <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -146,14 +149,25 @@ export const Shop = ({
                   className="relative aspect-[4/5] overflow-hidden border-b border-neutral-100 dark:border-neutral-800 cursor-crosshair pb-0 rounded-none bg-neutral-50 dark:bg-neutral-950"
                   onClick={() => handleProductSelect(product)}
                 >
-                  <ProductBadges product={product} />
+                  <ProductBadges product={product} showCategory={true} />
 
                   <ImageWithFallback 
                     src={product.imageUrl} 
                     alt={product.name}
                     imagePosition={product.imagePosition || 'center'}
-                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
+                    className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-105 ${
+                      product.inStock === false || (product.stockCount !== undefined && product.stockCount <= 0) ? 'grayscale opacity-60' : ''
+                    }`}
                   />
+
+                  {/* Sold Out Overlay Badge */}
+                  {(product.inStock === false || (product.stockCount !== undefined && product.stockCount <= 0)) && (
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-15">
+                      <span className="bg-rose-600 text-white text-[10px] font-mono font-extrabold uppercase tracking-[0.25em] px-4 py-2 border border-white/20 shadow-lg">
+                        SOLD OUT (품절)
+                      </span>
+                    </div>
+                  )}
 
                   {/* Top Action Buttons */}
                   <div className="absolute top-3 right-3 z-20 flex space-x-1.5">
@@ -182,10 +196,6 @@ export const Shop = ({
                     >
                       <ArrowRightLeft className="w-3.5 h-3.5" />
                     </button>
-                  </div>
-
-                  <div className="absolute top-3 left-3 bg-[#FFFFFF]/95 dark:bg-neutral-900/95 backdrop-blur text-neutral-800 dark:text-neutral-200 text-[9px] px-3 py-1 uppercase tracking-widest font-mono border border-neutral-200 dark:border-neutral-700 shadow-sm z-10">
-                    {product.category}
                   </div>
                   
                   {/* Hover Overlay */}

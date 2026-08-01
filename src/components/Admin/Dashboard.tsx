@@ -993,13 +993,36 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                       <div>
                         <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 block mb-2">재고 및 판매 상태</label>
                         <select
-                          value={product.inStock === false ? 'soldout' : 'instock'}
-                          onChange={(e) => updateProduct(product.id, { inStock: e.target.value === 'instock' })}
-                          className="w-full text-xs font-bold p-2 bg-white border border-neutral-300 focus:outline-none"
+                          value={(product.inStock === false || (product.stockCount !== undefined && product.stockCount <= 0)) ? 'soldout' : 'instock'}
+                          onChange={(e) => {
+                            const isStock = e.target.value === 'instock';
+                            updateProduct(product.id, { 
+                              inStock: isStock,
+                              stockCount: isStock ? (product.stockCount && product.stockCount > 0 ? product.stockCount : 10) : 0
+                            });
+                          }}
+                          className="w-full text-xs font-bold p-2 bg-white border border-neutral-300 focus:outline-none cursor-pointer"
                         >
                           <option value="instock">✅ 판매 중 (In Stock)</option>
-                          <option value="soldout">❌ 품절 (Sold Out)</option>
+                          <option value="soldout">⛔ 품절 (Sold Out)</option>
                         </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 block mb-2">재고 수량 (개)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={product.stockCount !== undefined ? product.stockCount : (product.inStock === false ? 0 : 10)}
+                          onChange={(e) => {
+                            const cnt = parseInt(e.target.value) || 0;
+                            updateProduct(product.id, {
+                              stockCount: cnt,
+                              inStock: cnt > 0
+                            });
+                          }}
+                          className="w-full text-xs font-mono font-bold p-2 bg-white border border-neutral-300 focus:outline-none"
+                        />
                       </div>
 
                       <div>
@@ -1635,6 +1658,11 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
         onClose={() => setShowCouponLeadsModal(false)}
       />
 
+      <AdminDiscountModal
+        isOpen={showDiscountModal}
+        onClose={() => setShowDiscountModal(false)}
+      />
+
       <AdminCategoryManagerModal
         isOpen={showCategoryModal}
         onClose={() => setShowCategoryModal(false)}
@@ -1643,11 +1671,6 @@ export const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
       <AdminTranslationEditor
         isOpen={showTranslationModal}
         onClose={() => setShowTranslationModal(false)}
-      />
-
-      <AdminDiscountModal
-        isOpen={showDiscountModal}
-        onClose={() => setShowDiscountModal(false)}
       />
 
       <AdminSystemHealthModal

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ExternalLink, ArrowRight, Share2, Heart, CheckCircle2, QrCode, ArrowRightLeft, Bell } from 'lucide-react';
+import { X, ExternalLink, ArrowRight, Share2, Heart, CheckCircle2, QrCode, ArrowRightLeft, Bell, Users, Zap } from 'lucide-react';
 import { Product } from '../types';
 import { useCMS } from '../cms';
 import { ImageWithFallback } from './ImageWithFallback';
@@ -16,6 +16,7 @@ interface ProductModalProps {
   product: Product | null;
   onClose: () => void;
   onAddToCart?: (id: string) => void;
+  onOpenTimeDeal?: () => void;
 }
 
 const formatUrl = (url?: string) => {
@@ -24,7 +25,7 @@ const formatUrl = (url?: string) => {
   return `https://${url}`;
 };
 
-export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
+export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onOpenTimeDeal }) => {
   const { settings, wishlist, toggleWishlist, compareList, toggleCompare, currency } = useCMS();
   const [selectedSize, setSelectedSize] = useState<string | null>('ONE SIZE');
   const [showSizeGuide, setShowSizeGuide] = useState(false);
@@ -36,7 +37,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
   const buyLink = product?.buyUrl || product?.link;
   const isWishlisted = product ? wishlist.includes(product.id) : false;
   const isCompared = product ? compareList.includes(product.id) : false;
-  const isSoldOut = product?.inStock === false;
+  const isSoldOut = product?.inStock === false || (product?.stockCount !== undefined && product.stockCount <= 0);
 
   const handleShare = async () => {
     const currentUrl = window.location.href;
@@ -153,6 +154,26 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                   {product.isPreorder && (
                     <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded text-xs text-amber-800 dark:text-amber-300 font-sans">
                       ⚡ <strong>프리오더 안내:</strong> 본 상품은 사전 예약 제작 상품입니다. 예상 발송 예정일은 <strong>{product.preorderDeliveryDate || '상세안내 참조'}</strong> 입니다.
+                    </div>
+                  )}
+
+                  {onOpenTimeDeal && (
+                    <div className="mt-3 p-3 bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-3 text-xs font-sans">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center space-x-1.5 font-extrabold text-amber-700 dark:text-amber-400">
+                          <Zap className="w-3.5 h-3.5 fill-amber-500" />
+                          <span>⚡ 24H 한정 타임딜 특가 진행 중!</span>
+                        </div>
+                        <p className="text-[11px] text-neutral-600 dark:text-neutral-400">
+                          한정 수량 초특가 25% 할인가로 즉시 구매 가능
+                        </p>
+                      </div>
+                      <button
+                        onClick={onOpenTimeDeal}
+                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[10px] uppercase tracking-wider rounded-lg shrink-0 cursor-pointer shadow-xs transition-all"
+                      >
+                        타임딜 특가
+                      </button>
                     </div>
                   )}
                 </div>

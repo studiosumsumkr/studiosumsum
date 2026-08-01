@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Banner, SiteSettings, SectionContent, Product, ProductReview, StockAlert, CouponClaim, ActivityLog, AiFaq, QnaInquiry } from './types';
+import { Banner, SiteSettings, SectionContent, Product, ProductReview, StockAlert, CouponClaim, ActivityLog, AiFaq, QnaInquiry, Coupon } from './types';
 import { db, doc, setDoc, onSnapshot } from './lib/firebase';
 
 const STORAGE_KEY = 'studio_sumsum_v6_cool_props_data';
@@ -19,6 +19,7 @@ interface CMSData {
   reviews?: ProductReview[];
   stockAlerts?: StockAlert[];
   couponClaims?: CouponClaim[];
+  coupons?: Coupon[];
   activityLogs?: ActivityLog[];
   aiFaqs?: AiFaq[];
   inquiries?: QnaInquiry[];
@@ -210,7 +211,35 @@ const DEFAULT_DATA: CMSData = {
     { id: '4', question: '세라믹 오브제 세척 및 관리 방법', answer: '세라믹 소품 및 인센스 홀더는 미온수와 부드러운 천으로 가볍게 닦아주시기 바랍니다. 강한 충격이나 식기세척기 사용은 피해주세요.', keywords: '관리,세척,세라믹,인센스,홀더' },
     { id: '5', question: '오프라인 매장 위치 및 운영 시간', answer: 'STUDIO SUMSUM 쇼룸은 서울 성수동 플래그십 스토어에서 만나보실 수 있습니다. (운영시간: 화~일 12:00 ~ 20:00, 월요일 휴무)', keywords: '매장,오프라인,쇼룸,성수동,위치,운영시간' }
   ],
-  inquiries: []
+  inquiries: [],
+  coupons: [
+    {
+      id: 'c1',
+      name: 'WELCOME 15% SPECIAL COUPON',
+      code: 'SUMSUM15',
+      discountType: 'PERCENT',
+      discountValue: 15,
+      minOrderAmount: 30000,
+      expiryDate: '2026-12-31',
+      maxClaims: 500,
+      claimCount: 42,
+      isActive: true,
+      createdAt: '2026-01-01'
+    },
+    {
+      id: 'c2',
+      name: '신규 회원 ₩5,000 감사 쿠폰',
+      code: 'WELCOME5000',
+      discountType: 'FIXED',
+      discountValue: 5000,
+      minOrderAmount: 50000,
+      expiryDate: '2026-12-31',
+      maxClaims: 300,
+      claimCount: 18,
+      isActive: true,
+      createdAt: '2026-01-15'
+    }
+  ]
 };
 
 export const useCMS = () => {
@@ -589,6 +618,41 @@ export const useCMS = () => {
     }));
   };
 
+  const addCoupon = (coupon: Omit<Coupon, 'id' | 'createdAt' | 'claimCount'>) => {
+    const newCoupon: Coupon = {
+      ...coupon,
+      id: 'c_' + Date.now(),
+      createdAt: new Date().toISOString().slice(0, 10),
+      claimCount: 0
+    };
+    setData(prev => ({
+      ...prev,
+      coupons: [newCoupon, ...(prev.coupons || [])]
+    }));
+    logActivity('쿠폰 생성', `쿠폰명: ${coupon.name} (코드: ${coupon.code})`);
+  };
+
+  const updateCoupon = (id: string, updates: Partial<Coupon>) => {
+    setData(prev => ({
+      ...prev,
+      coupons: (prev.coupons || []).map(c => c.id === id ? { ...c, ...updates } : c)
+    }));
+  };
+
+  const deleteCoupon = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      coupons: (prev.coupons || []).filter(c => c.id !== id)
+    }));
+  };
+
+  const updateStockAlertStatus = (id: string, notified: boolean) => {
+    setData(prev => ({
+      ...prev,
+      stockAlerts: (prev.stockAlerts || []).map(s => s.id === id ? { ...s, notified } : s)
+    }));
+  };
+
   const addAiFaq = (question: string, answer: string, keywords?: string) => {
     const newFaq: AiFaq = {
       id: Date.now().toString(),
@@ -785,6 +849,7 @@ export const useCMS = () => {
     reviews: data.reviews || [],
     stockAlerts: data.stockAlerts || [],
     couponClaims: data.couponClaims || [],
+    coupons: data.coupons || DEFAULT_DATA.coupons || [],
     activityLogs: data.activityLogs || [],
     aiFaqs: data.aiFaqs || DEFAULT_DATA.aiFaqs || [],
     inquiries: data.inquiries || [],
@@ -815,6 +880,10 @@ export const useCMS = () => {
     addCouponClaim,
     deleteCouponClaim,
     updateCouponClaimStatus,
+    addCoupon,
+    updateCoupon,
+    deleteCoupon,
+    updateStockAlertStatus,
     addAiFaq,
     updateAiFaq,
     deleteAiFaq,

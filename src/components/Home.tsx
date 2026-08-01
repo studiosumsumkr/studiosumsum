@@ -22,13 +22,23 @@ import {
   ArrowUpDown,
   History,
   X,
-  Clock
+  Clock,
+  Users,
+  Flame,
+  Zap
 } from 'lucide-react';
 import { getTypographyStyle, getLayoutSpacing } from '../utils';
 import { formatPrice } from '../utils/currency';
+import { ProductBadges } from './ProductBadges';
 import { Product } from '../types';
 
-export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void }) => {
+export const Home = ({ 
+  onProductClick,
+  onOpenTimeDeal 
+}: { 
+  onProductClick?: (p: Product) => void;
+  onOpenTimeDeal?: () => void;
+}) => {
   const { settings, banners, products, currency } = useCMS();
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -170,6 +180,68 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
         </div>
       </div>
 
+      {/* ------------------------------------------------------------- */}
+      {/* TIME DEAL BANNER SECTION                                      */}
+      {/* ------------------------------------------------------------- */}
+      <section className="py-10 my-10 bg-neutral-950 text-white border-y border-neutral-800 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-4">
+          <div className="text-center md:text-left space-y-1">
+            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-amber-400 font-extrabold">LIMITED TIME OFFER</span>
+            <h3 className="text-2xl font-black font-display tracking-tight">24시간 한정 타임딜</h3>
+          </div>
+
+          <div className="bg-gradient-to-br from-amber-950/40 via-neutral-900 to-black p-6 md:p-8 rounded-3xl border border-amber-500/30 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex items-center space-x-2 px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[10px] font-mono font-black uppercase tracking-wider">
+                  <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 animate-pulse" />
+                  <span>24H FLASH SALE</span>
+                </div>
+                <span className="text-xs font-mono font-bold text-rose-400 bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-500/30">
+                  단 5개 남음!
+                </span>
+              </div>
+
+              <h4 className="text-xl md:text-2xl font-bold font-display text-white">
+                프리미엄 오라클 브론즈 인센스 버너
+              </h4>
+              <p className="text-xs md:text-sm text-neutral-300 font-sans leading-relaxed">
+                24시간 동안 진행되는 한정 수량 초특가 타임세일! 마감 직전 특별 25% 할인가로 만나보세요.
+              </p>
+
+              {/* Live Timer */}
+              <div className="bg-black/60 p-3 rounded-xl inline-flex items-center space-x-4 px-4 font-mono border border-amber-500/20 text-xs">
+                <span className="text-amber-300 font-bold flex items-center space-x-1.5">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>딜 마감까지:</span>
+                </span>
+                <span className="text-amber-400 font-black tracking-widest text-sm">
+                  02:45:12
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row md:flex-col items-center md:items-end gap-4 shrink-0 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-neutral-800 pt-4 md:pt-0">
+              <div className="font-mono text-center md:text-right">
+                <span className="text-xs text-neutral-500 line-through block">₩168,000</span>
+                <span className="text-2xl font-black text-amber-400">₩128,000</span>
+                <span className="text-[10px] bg-amber-500 text-black px-2 py-0.5 rounded font-black ml-2">25% OFF</span>
+              </div>
+
+              {onOpenTimeDeal && (
+                <button
+                  onClick={onOpenTimeDeal}
+                  className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center space-x-2 cursor-pointer w-full sm:w-auto justify-center"
+                >
+                  <Zap className="w-4 h-4 fill-black" />
+                  <span>타임딜 특가 구매하기</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Main Curated Shop Collection Section */}
       <section id="featured" className="scroll-mt-32 py-20 lg:py-32 max-w-7xl mx-auto px-6 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 pb-6 border-b border-[#E5E5E5]">
@@ -247,7 +319,7 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
         {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {filteredProducts.map((product, idx) => {
-            const isSoldOut = product.inStock === false;
+            const isSoldOut = product.inStock === false || (product.stockCount !== undefined && product.stockCount <= 0);
 
             return (
               <motion.div
@@ -271,29 +343,7 @@ export const Home = ({ onProductClick }: { onProductClick?: (p: Product) => void
                   />
                   
                   {/* Category & Status Badges */}
-                  <div className="absolute top-3 left-3 flex flex-col gap-1 items-start z-10">
-                    {product.category && (
-                      <span className="bg-[#111111] text-[#FFFFFF] text-[8px] font-mono uppercase tracking-[0.2em] px-2.5 py-1">
-                        {product.category}
-                      </span>
-                    )}
-                    {product.isPreorder && (
-                      <span className="bg-amber-500 text-black text-[8px] font-mono font-extrabold uppercase tracking-widest px-2 py-0.5 flex items-center space-x-1 shadow-md">
-                        <Clock className="w-2.5 h-2.5" />
-                        <span>PRE-ORDER ({product.preorderDeliveryDate || '순차발송'})</span>
-                      </span>
-                    )}
-                    {product.isNewProduct && (
-                      <span className="bg-emerald-600 text-white text-[8px] font-mono uppercase font-bold tracking-widest px-2 py-0.5">
-                        NEW
-                      </span>
-                    )}
-                    {product.isBestSeller && (
-                      <span className="bg-amber-600 text-white text-[8px] font-mono uppercase font-bold tracking-widest px-2 py-0.5">
-                        BEST
-                      </span>
-                    )}
-                  </div>
+                  <ProductBadges product={product} showCategory={true} />
 
                   {/* Sold Out Overlay Badge */}
                   {isSoldOut && (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Home, ShoppingBag, Search, Heart, ArrowRightLeft, Bot, Ticket, User, PanelLeftOpen, PanelLeftClose, X, Sparkles } from 'lucide-react';
+import { Home, ShoppingBag, Search, Heart, ArrowRightLeft, Bot, Ticket, User, PanelLeftOpen, PanelLeftClose, X, Sparkles, Users, Zap } from 'lucide-react';
 import { useCMS } from '../cms';
 
 interface FloatingSideNavProps {
@@ -11,6 +11,7 @@ interface FloatingSideNavProps {
   onOpenCoupon: () => void;
   onOpenAi: () => void;
   onOpenAdmin: () => void;
+  onOpenTimeDeal?: () => void;
   wishlistCount: number;
   compareCount: number;
 }
@@ -22,6 +23,7 @@ export const FloatingSideNav: React.FC<FloatingSideNavProps> = ({
   onOpenCoupon,
   onOpenAi,
   onOpenAdmin,
+  onOpenTimeDeal,
   wishlistCount,
   compareCount,
 }) => {
@@ -174,6 +176,20 @@ export const FloatingSideNav: React.FC<FloatingSideNavProps> = ({
                 AI 1:1 상담 / Q&A
               </span>
             </button>
+
+            {onOpenTimeDeal && (
+              <button
+                onClick={() => {
+                  onOpenTimeDeal();
+                }}
+                className="p-2.5 bg-amber-500/10 text-amber-700 hover:bg-amber-500 hover:text-black rounded-xl transition-all relative group/item cursor-pointer"
+              >
+                <Zap className="w-4 h-4 text-amber-600 fill-amber-600" />
+                <span className="absolute left-full ml-3 px-2.5 py-1 bg-neutral-900 text-white text-[10px] font-bold rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/item:opacity-100 transition-opacity shadow-md z-50">
+                  ⚡ 24H 한정 타임딜
+                </span>
+              </button>
+            )}
 
             <button
               onClick={() => {

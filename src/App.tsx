@@ -107,6 +107,7 @@ import { GiftFinderModal } from './components/GiftFinderModal';
 import { CouponModal } from './components/CouponModal';
 import { AiConciergeWidget } from './components/AiConciergeWidget';
 import { FloatingSideNav } from './components/FloatingSideNav';
+import { TimeDealModal } from './components/TimeDealModal';
 import { Product } from './types';
 
 const ScrollToHash = () => {
@@ -141,6 +142,7 @@ function AppContent() {
   const [isGiftFinderOpen, setIsGiftFinderOpen] = useState(false);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
+  const [isTimeDealOpen, setIsTimeDealOpen] = useState(false);
 
   const { settings, loading, wishlist = [], compareList = [] } = useCMS();
   const location = useLocation();
@@ -194,6 +196,7 @@ function AppContent() {
         onCompareClick={() => setIsCompareOpen(true)}
         onCouponClick={() => setIsCouponModalOpen(true)}
         onAiClick={() => setIsAiOpen(!isAiOpen)}
+        onTimeDealClick={() => setIsTimeDealOpen(true)}
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
       />
@@ -205,6 +208,7 @@ function AppContent() {
         onOpenCoupon={() => setIsCouponModalOpen(true)}
         onOpenAi={() => setIsAiOpen(!isAiOpen)}
         onOpenAdmin={() => setIsAdminView(true)}
+        onOpenTimeDeal={() => setIsTimeDealOpen(true)}
         wishlistCount={wishlist.length}
         compareCount={compareList.length}
       />
@@ -257,6 +261,11 @@ function AppContent() {
         onClose={() => setIsCouponModalOpen(false)}
       />
 
+      <TimeDealModal
+        isOpen={isTimeDealOpen}
+        onClose={() => setIsTimeDealOpen(false)}
+      />
+
       <WishlistDrawer
         isOpen={isWishlistOpen}
         onClose={() => setIsWishlistOpen(false)}
@@ -272,6 +281,7 @@ function AppContent() {
       <ProductModal 
         product={selectedProduct} 
         onClose={() => setSelectedProduct(null)} 
+        onOpenTimeDeal={() => setIsTimeDealOpen(true)}
       />
 
       <RecentlyViewedBar
@@ -290,8 +300,25 @@ function AppContent() {
           className="w-full flex flex-col"
         >
           <Routes location={location}>
-            <Route path="/" element={<Home onProductClick={setSelectedProduct} />} />
-            <Route path="/shop" element={<Shop searchQuery={searchQuery} onProductClick={setSelectedProduct} />} />
+            <Route 
+              path="/" 
+              element={
+                <Home 
+                  onProductClick={setSelectedProduct} 
+                  onOpenTimeDeal={() => setIsTimeDealOpen(true)} 
+                />
+              } 
+            />
+            <Route 
+              path="/shop" 
+              element={
+                <Shop 
+                  searchQuery={searchQuery} 
+                  onProductClick={setSelectedProduct} 
+                  onOpenTimeDeal={() => setIsTimeDealOpen(true)} 
+                />
+              } 
+            />
           </Routes>
         </motion.div>
       </AnimatePresence>

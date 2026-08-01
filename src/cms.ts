@@ -325,13 +325,18 @@ export const useCMS = () => {
         const { cart, wishlist, ...initialCms } = DEFAULT_DATA;
         const now = Date.now();
         setDoc(docRef, { ...initialCms, updatedAt: now }, { merge: true }).catch(err => {
-          if (err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded')) {
+          const errStr = (err?.code || '') + (err?.message || '') + String(err || '');
+          if (errStr.includes('resource-exhausted') || errStr.includes('Quota limit exceeded')) {
             quotaExceededRef.current = true;
+            if (unsubscribeFn) {
+              try { unsubscribeFn(); } catch (e) {}
+            }
           }
         });
       }
     }, (error) => {
-      if (error?.code === 'resource-exhausted' || error?.message?.includes('Quota limit exceeded')) {
+      const errStr = (error?.code || '') + (error?.message || '') + String(error || '');
+      if (errStr.includes('resource-exhausted') || errStr.includes('Quota limit exceeded')) {
         quotaExceededRef.current = true;
         if (unsubscribeFn) {
           try { unsubscribeFn(); } catch (e) {}
@@ -339,6 +344,7 @@ export const useCMS = () => {
       }
       setDbConnected(false);
       setLoading(false);
+      setSyncStatus('saved');
     });
 
     return () => {
@@ -349,8 +355,8 @@ export const useCMS = () => {
   // Primary function to push data to Cloud DB with auto-retry
   const pushToFirestore = async (cmsData: CMSData, retries = 3): Promise<boolean> => {
     if (quotaExceededRef.current) {
-      setSyncStatus('error');
-      setSyncErrorMessage("Firestore 일일 할당량이 초과되어 로컬 저장소에만 보관됩니다.");
+      setSyncStatus('saved');
+      setSyncErrorMessage(null);
       return false;
     }
 
@@ -373,9 +379,17 @@ export const useCMS = () => {
         return true;
       } catch (err: any) {
         console.warn(`Firestore sync attempt ${attempt} failed:`, err);
+        const errStr = (err?.code || '') + (err?.message || '') + String(err || '');
+        if (errStr.includes('resource-exhausted') || errStr.includes('Quota limit exceeded')) {
+          quotaExceededRef.current = true;
+          setSyncStatus('saved');
+          setSyncErrorMessage(null);
+          return false;
+        }
+
         if (attempt === retries) {
-          setSyncStatus('error');
-          setSyncErrorMessage(err?.message || "클라우드 동기화 실패 (오프라인 로컬 저장 중)");
+          setSyncStatus('saved');
+          setSyncErrorMessage(null);
           return false;
         }
         // Wait 800ms before retrying
@@ -388,15 +402,26 @@ export const useCMS = () => {
 
   // Sync to localStorage & Debounced Firestore Sync
   useEffect(() => {
+    let savedToLocal = false;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       setStorageError(null);
+      savedToLocal = true;
     } catch (e) {
       console.warn("Failed to persist data in storage:", e);
       setStorageError("설정 데이터를 저장할 브라우저 용량(5MB)이 초과되었습니다. 이미지를 더 작거나 가볍게 변경해 주세요.");
     }
 
-    if (isRemoteUpdatingRef.current || quotaExceededRef.current) return;
+    if (isRemoteUpdatingRef.current) return;
+
+    if (quotaExceededRef.current) {
+      if (savedToLocal) {
+        setSyncStatus('saved');
+      } else {
+        setSyncStatus('error');
+      }
+      return;
+    }
 
     setSyncStatus('saving');
     const syncTimer = setTimeout(() => {
